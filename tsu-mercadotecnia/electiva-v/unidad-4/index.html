@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electiva V - Emprendimiento e Innovación Empresarial | Unidad IV (Parte 1) - Plan de Negocios y Estructura Organizativa</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --border-color: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --primary: #0284c7;
+            --primary-hover: #0369a1;
+            --success: #10b981;
+            --error: #ef4444;
+            --font-family: 'Outfit', sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-main);
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 24px 24px;
+            color: var(--text-main);
+            font-family: var(--font-family);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 850px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            padding: 40px;
+            position: relative;
+        }
+
+        /* Top Bar: Hearts and Progress */
+        .top-status-bar {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .lives-container {
+            display: flex;
+            gap: 5px;
+            color: var(--error);
+            font-size: 20px;
+        }
+        
+        .life-heart {
+            transition: all 0.3s;
+        }
+        .life-heart.lost {
+            color: #cbd5e1;
+            transform: scale(0.8);
+        }
+
+        .progress-indicator {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        /* Screens */
+        .screen { display: none; opacity: 0; transform: translateY(8px); transition: all 0.3s; }
+        .screen.active { display: block; opacity: 1; transform: translateY(0); }
+
+        /* Typography */
+        h1 { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+        .app-subtitle { font-size: 12px; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 20px; display: block; }
+        h2 { font-size: 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+        h2::before { content: ''; width: 4px; height: 16px; background-color: var(--primary); border-radius: 2px; }
+        p.description { font-size: 14.5px; color: var(--text-muted); line-height: 1.5; margin-bottom: 24px; }
+
+        /* Form & Buttons */
+        .input-group { margin-bottom: 15px; }
+        .text-input { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-family: var(--font-family); }
+        .btn { padding: 12px 24px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: var(--font-family); }
+        .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+        .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); }
+        
+        .team-members-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+
+        /* Nudge Modal (Hardcore Mode) */
+        .nudge-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.4); backdrop-filter: blur(2px); z-index: 100; align-items: center; justify-content: center; }
+        .nudge-overlay.active { display: flex; }
+        .nudge-card { background: white; padding: 25px; border-radius: 12px; width: 100%; max-width: 460px; text-align: center; }
+        .nudge-text { background: #f8fafc; padding: 15px; border-left: 3px solid var(--error); margin: 15px 0; font-size: 14px; text-align: left; }
+        .countdown-timer { font-weight: bold; color: var(--error); margin-left: 5px; }
+
+        /* Module Injected CSS Placeholders */
+        
+
+
+
+
+
+        @media print {
+            body { background: white !important; }
+            .app-container, .nudge-overlay { display: none !important; }
+            #printReportTemplate { display: block !important; }
+        }
+        #printReportTemplate { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- Top Status Bar (Lives) -->
+        <div class="top-status-bar" id="statusBar">
+            <div class="lives-container" id="livesContainer">
+                <span class="life-heart" id="life_3">❤️</span>
+                <span class="life-heart" id="life_2">❤️</span>
+                <span class="life-heart" id="life_1">❤️</span>
+            </div>
+            <div class="progress-indicator">Módulo <span id="currentMod">0</span> de 4</div>
+        </div>
+
+        <!-- SCREEN 0: Welcome / Team Input -->
+        <div class="screen active" id="screenWelcome">
+            <span class="app-subtitle">Electiva V - Emprendimiento e Innovación Empresarial | Unidad IV (Parte 1) - Plan de Negocios y Estructura Organizativa</span>
+            <h1>El Mapa de Ruta de la Startup: Lean Canvas y Estructura Ágil</h1>
+            <p class="description">Caso SwiftCart: SwiftCart es una startup de entrega express de suministros y refrigerios para oficinas. Aunque la idea parece buena, enfrentan baja retención, problemas de monetización y fricción operativa. Además, el equipo fundador está abrumado por falta de delimitación de roles. Tu misión es estructurar la estrategia de SwiftCart usando el Lean Canvas y definir su organigrama ágil inicial.</p>
+
+            <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+                <strong>Modalidad:</strong> Trabajo en Equipo (El sistema pedirá el nombre de todos los integrantes)
+            </div>
+
+            <div id="teamInputArea">
+                <!-- Injected via JS based on modalidad -->
+            </div>
+
+            <button class="btn" onclick="startSimulation()">Iniciar Misión</button>
+        </div>
+
+        <!-- INJECTED MODULES -->
+        <div class="screen module-screen" id="module_1"><h2>Misión 1: El Canvas: Estructuración Estratégica</h2><p class="description">Asigna cada elemento estratégico del caso SwiftCart a su respectivo bloque del Lean Canvas. Envía a 'Descartados' el ruido o las trampas.</p><div style="background:#f8fafc; border-left:4px solid #0284c7; padding:15px; margin-bottom:20px; font-size:14px; border-radius:6px;"><strong>Contexto del Caso:</strong> SwiftCart necesita organizar sus hipótesis en el lienzo. Ubica cada concepto en su casilla o descártalo si es una métrica vanidosa/idea errónea.</div>
+        <div style="background:#fffbeb; border:1px solid #fef3c7; border-left:4px solid #d97706; padding:15px; margin-bottom:20px; font-size:14px; border-radius:8px;">
+            <strong style="color:#b45309; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <span>💡</span> Pista del Consultor / Advertencia
+            </strong>
+            <p style="color:#78350f; line-height:1.5; margin:0;">Pista del Consultor: No confundas la Propuesta de Valor (el beneficio central) con la Solución (las características específicas). Las metas vagas no son estrategia.</p>
+        </div>
+        <div id="mod1_container" style="display:flex; gap:20px; margin-bottom:20px;"><div style="flex:1;"><h3>Categorías</h3><div class="cat-drop" onclick="selectCat1('Problema')" style="padding:15px; border:2px dashed #cbd5e1; margin-top:10px; border-radius:8px; cursor:pointer; min-height:80px;" id="cat_1_Problema"><strong style="color:#64748b; font-size:13px;">Problema</strong></div><div class="cat-drop" onclick="selectCat1('Segmento de Clientes')" style="padding:15px; border:2px dashed #cbd5e1; margin-top:10px; border-radius:8px; cursor:pointer; min-height:80px;" id="cat_1_Segmento de Clientes"><strong style="color:#64748b; font-size:13px;">Segmento de Clientes</strong></div><div class="cat-drop" onclick="selectCat1('Propuesta de Valor Única')" style="padding:15px; border:2px dashed #cbd5e1; margin-top:10px; border-radius:8px; cursor:pointer; min-height:80px;" id="cat_1_Propuesta de Valor Única"><strong style="color:#64748b; font-size:13px;">Propuesta de Valor Única</strong></div><div class="cat-drop" onclick="selectCat1('Canales')" style="padding:15px; border:2px dashed #cbd5e1; margin-top:10px; border-radius:8px; cursor:pointer; min-height:80px;" id="cat_1_Canales"><strong style="color:#64748b; font-size:13px;">Canales</strong></div><div class="cat-drop" onclick="selectCat1('Descartados')" style="padding:15px; border:2px dashed #cbd5e1; margin-top:10px; border-radius:8px; cursor:pointer; min-height:80px;" id="cat_1_Descartados"><strong style="color:#64748b; font-size:13px;">Descartados</strong></div></div><div style="flex:1;"><h3>Conceptos (Haz clic para seleccionar/devolver)</h3><div id="items_list_1"><div class="item-drag" id="item_1_0" onclick="selectItem1(event, 0)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Pérdida de tiempo del personal de oficina comprando café.</div><div class="item-drag" id="item_1_1" onclick="selectItem1(event, 1)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Oficinas medianas con más de 20 empleados en zonas financieras.</div><div class="item-drag" id="item_1_2" onclick="selectItem1(event, 2)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Abastecimiento express de snacks corporativo en menos de 2 horas.</div><div class="item-drag" id="item_1_3" onclick="selectItem1(event, 3)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Visitas directas a administradores y plataforma web.</div><div class="item-drag" id="item_1_4" onclick="selectItem1(event, 4)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Ser la empresa de delivery más famosa de la ciudad.</div><div class="item-drag" id="item_1_5" onclick="selectItem1(event, 5)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Cualquier persona que coma snacks y tome café.</div></div></div></div><button class="btn" onclick="validarMod1()">Validar Clasificación</button></div>
+<div class="screen module-screen" id="module_2"><h2>Misión 2: Validación en el Terreno</h2><p class="description">Selecciona la estrategia de validación de problema con Early Adopters que requiera la menor inversión y ofrezca el mayor aprendizaje.</p><div style="background:#f8fafc; border-left:4px solid #0284c7; padding:15px; margin-bottom:20px; font-size:14px; border-radius:6px;"><strong>Contexto del Caso:</strong> SwiftCart quiere validar si los administradores de oficinas realmente sienten el dolor de compras ineficientes antes de comprar vehículos de entrega o software costoso.</div>
+        <div style="background:#fffbeb; border:1px solid #fef3c7; border-left:4px solid #d97706; padding:15px; margin-bottom:20px; font-size:14px; border-radius:8px;">
+            <strong style="color:#b45309; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <span>💡</span> Pista del Consultor / Advertencia
+            </strong>
+            <p style="color:#78350f; line-height:1.5; margin:0;">Pista del Consultor: Sal del edificio. El feedback cualitativo cara a cara vale más que 1,000 encuestas impersonales en redes sociales.</p>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;"><button class="btn btn-outline" style="text-align:left;" onclick="checkEscenario2(0)">Redactar una proyección financiera a 5 años basada en encuestas online a amigos de la universidad.</button><button class="btn btn-outline" style="text-align:left;" onclick="checkEscenario2(1)">Visitar 10 oficinas del sector, entrevistar a los secretarios sobre su rutina de compras y ofrecer un piloto inmediato con un grupo de WhatsApp.</button><button class="btn btn-outline" style="text-align:left;" onclick="checkEscenario2(2)">Alquilar una bodega comercial y comprar snacks al por mayor para estar listos cuando los clientes decidan llamar.</button></div></div>
+<div class="screen module-screen" id="module_3"><h2>Misión 3: Métricas Clave del Modelo</h2><p class="description">Evalúa la siguiente afirmación sobre las métricas iniciales de la startup y justifica si es verdadera o falsa.</p><div style="background:#f8fafc; border-left:4px solid #0284c7; padding:15px; margin-bottom:20px; font-size:14px; border-radius:6px;"><strong>Contexto del Caso:</strong> El Lean Canvas exige definir las 'Métricas Clave'. Uno de los cofundadores de SwiftCart sugiere enfocar todos los recursos de marketing inicial en conseguir la mayor cantidad de seguidores en Instagram y likes, argumentando que esto validará el interés de las empresas.</div>
+        <div style="background:#fffbeb; border:1px solid #fef3c7; border-left:4px solid #d97706; padding:15px; margin-bottom:20px; font-size:14px; border-radius:8px;">
+            <strong style="color:#b45309; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <span>💡</span> Pista del Consultor / Advertencia
+            </strong>
+            <p style="color:#78350f; line-height:1.5; margin:0;">Pista del Consultor: En etapa inicial, enfócate en retención, uso y eficiencia, no en likes ni en el tráfico genérico de internet.</p>
+        </div>
+        <div style="padding:30px; background:#f1f5f9; text-align:center;">Módulo {tipo} en construcción...</div><button class="btn" onclick="proceedToNextModule()">Saltar (Debug)</button></div>
+<div class="screen module-screen" id="module_4"><h2>Misión 4: Estructura Organizativa Ágil</h2><p class="description">Ordena cronológicamente los roles de la célula de trabajo de SwiftCart, desde que se genera la demanda hasta que se despacha el producto.</p><div style="background:#f8fafc; border-left:4px solid #0284c7; padding:15px; margin-bottom:20px; font-size:14px; border-radius:6px;"><strong>Contexto del Caso:</strong> Arma el pipeline operativo del equipo fundador definiendo el flujo correcto: ¿Quién trae el cliente, quién gestiona la plataforma y quién asegura la entrega física?</div>
+        <div style="background:#fffbeb; border:1px solid #fef3c7; border-left:4px solid #d97706; padding:15px; margin-bottom:20px; font-size:14px; border-radius:8px;">
+            <strong style="color:#b45309; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <span>💡</span> Pista del Consultor / Advertencia
+            </strong>
+            <p style="color:#78350f; line-height:1.5; margin:0;">Pista del Consultor: Growth genera la demanda, Producto facilita la experiencia y Operaciones cumple la promesa física.</p>
+        </div>
+        <div style="padding:30px; background:#f1f5f9; text-align:center;">Módulo {tipo} en construcción...</div><button class="btn" onclick="proceedToNextModule()">Saltar (Debug)</button></div>
+
+
+        <!-- SCREEN RESULTS -->
+        <div class="screen" id="screenResults">
+            <h2>Consola de Diagnóstico Final</h2>
+            <p class="description">Has completado los retos. Revisa tu desempeño y genera el reporte oficial obligatorio.</p>
+            
+            <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 20px;">
+                <h3 style="color: #047857; margin-bottom: 5px;">Puntuación Final</h3>
+                <div style="font-size: 36px; font-weight: 800; color: #10b981;" id="finalScoreVal">0.0</div>
+                <div style="font-size: 12px; color: #047857; text-transform: uppercase;">Sobre 5.0 pts</div>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 30px;">
+                <button class="btn" onclick="downloadPDFDirect()">1. Descargar PDF (Obligatorio)</button>
+                <button class="btn btn-outline" onclick="printNatively()">2. Imprimir / Ver PDF</button>
+            </div>
+            <!-- Botón de reiniciar NO EXISTE (Hardcore mode finality) -->
+        </div>
+
+    </div>
+
+    <!-- NUDGE MODAL -->
+    <div class="nudge-overlay" id="nudgeOverlay">
+        <div class="nudge-card">
+            <div style="font-size: 28px; margin-bottom: 10px;">⚠️</div>
+            <h3 style="margin-bottom: 8px;">Detente y Reflexiona</h3>
+            <div class="nudge-text" id="nudgeText">...</div>
+            <button class="btn" id="btnNudgeClose" disabled onclick="closeNudge()">
+                Reintentar en <span class="countdown-timer" id="nudgeTimer">5</span>s
+            </button>
+        </div>
+    </div>
+
+    <!-- GAME OVER MODAL -->
+    <div class="nudge-overlay" id="gameOverOverlay">
+        <div class="nudge-card">
+            <div style="font-size: 28px; margin-bottom: 10px;">💀</div>
+            <h3 style="margin-bottom: 8px;">Sobrecarga del Sistema</h3>
+            <div class="nudge-text">Has perdido tus 3 intentos en este módulo. El sistema de seguridad ha reiniciado la conexión. Debes comenzar de nuevo.</div>
+            <button class="btn" onclick="location.reload()">Reiniciar Simulación</button>
+        </div>
+    </div>
+
+    <!-- PRINT TEMPLATE -->
+    <div id="printReportTemplate" style="width:100%; max-width:800px; margin:0 auto; padding:20px; font-family: Helvetica, sans-serif;">
+        <div style="border-bottom: 2px solid #2c3e50; padding-bottom: 15px; margin-bottom: 20px;">
+            <h2 style="color: #2c3e50; margin:0;">REPORTE OFICIAL DE EVALUACIÓN</h2>
+            <div style="font-size: 12px; color: #7f8c8d;">Electiva V - Emprendimiento e Innovación Empresarial | Unidad IV (Parte 1) - Plan de Negocios y Estructura Organizativa</div>
+        </div>
+        <div style="font-size: 12px; margin-bottom: 20px;">
+            <strong>Integrantes del Equipo:</strong><br>
+            <div id="printNames"></div>
+        </div>
+        <div style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 20px; text-align: center;">
+            <div style="font-weight: bold;">CALIFICACIÓN FINAL</div>
+            <div style="font-size: 32px; color: #27ae60; font-weight: bold;" id="printScore">0.0 / 5.0</div>
+        </div>
+    </div>
+
+    <script>
+        // Core Engine State
+        const isTeamMode = true; // boolean injected by python
+        let teamMembers = [];
+        let lives = 3;
+        let currentScore = 0;
+        let totalModules = 4;
+        let currentModuleIndex = 1;
+        let penaltyPerMistake = 0.25; 
+        let baseScore = 5.0;
+
+        // Statistics and Detailed Evaluation Logging
+        let totalAciertos = 0;
+        let totalDesaciertos = 0;
+        let logDesempeno = []; // [{ modulo: "Misión 1", titulo: "...", detalle: "...", errores: N }]
+
+        function registrarProgresoModulo(tituloModulo, preguntaInstruccion, detalleRespuesta, erroresModulo) {
+            totalAciertos++;
+            logDesempeno.push({
+                mision: 'Misión ' + currentModuleIndex,
+                titulo: tituloModulo,
+                pregunta: preguntaInstruccion || '',
+                detalle: detalleRespuesta,
+                errores: erroresModulo || 0
+            });
+        }
+
+        // Init Team Inputs
+        function initWelcome() {
+            const container = document.getElementById('teamInputArea');
+            if (isTeamMode) {
+                container.innerHTML = `
+                    <label class="input-label">Nombres de los Integrantes del Equipo:</label>
+                    <div class="team-members-list" id="memberList">
+                        <input type="text" class="text-input member-input" placeholder="Integrante 1 (Nombre Completo)">
+                        <input type="text" class="text-input member-input" placeholder="Integrante 2 (Nombre Completo)">
+                    </div>
+                    <button class="btn btn-outline" style="font-size:12px; padding:6px 12px;" onclick="addMember()">+ Añadir Integrante</button>
+                `;
+            } else {
+                container.innerHTML = `
+                    <label class="input-label">Tu Nombre Completo:</label>
+                    <input type="text" class="text-input member-input" id="singleName" placeholder="Escribe tu nombre para comenzar...">
+                `;
+            }
+        }
+
+        function addMember() {
+            const list = document.getElementById('memberList');
+            const input = document.createElement('input');
+            input.type = "text";
+            input.className = "text-input member-input";
+            input.placeholder = "Integrante " + (list.children.length + 1);
+            list.appendChild(input);
+        }
+
+        function startSimulation() {
+            const inputs = document.querySelectorAll('.member-input');
+            teamMembers = Array.from(inputs).map(i => i.value.trim()).filter(v => v !== "");
+            
+            if (teamMembers.length === 0) {
+                alert("Debes ingresar al menos un nombre para comenzar.");
+                return;
+            }
+
+            document.getElementById('screenWelcome').classList.remove('active');
+            document.getElementById('statusBar').style.display = 'flex';
+            showModule(1);
+        }
+
+        function showModule(index) {
+            document.querySelectorAll('.module-screen').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById('module_' + index);
+            if (target) {
+                target.classList.add('active');
+                document.getElementById('currentMod').innerText = index;
+            } else {
+                finishSimulation();
+            }
+        }
+
+        function proceedToNextModule() {
+            currentModuleIndex++;
+            showModule(currentModuleIndex);
+        }
+
+        // Hardcore Engine: Nudges and Lives
+        function triggerError(nudgeMessage) {
+            totalDesaciertos++;
+            baseScore -= penaltyPerMistake;
+            if (baseScore < 0) baseScore = 0;
+            
+            loseLife();
+            if (lives > 0) {
+                showNudge(nudgeMessage);
+            }
+        }
+
+        function loseLife() {
+            const heart = document.getElementById('life_' + lives);
+            if (heart) heart.classList.add('lost');
+            lives--;
+            if (lives === 0) {
+                setTimeout(() => {
+                    document.getElementById('gameOverOverlay').classList.add('active');
+                }, 500);
+            }
+        }
+
+        function showNudge(msg) {
+            document.getElementById('nudgeText').innerText = msg;
+            document.getElementById('nudgeOverlay').classList.add('active');
+            
+            const btn = document.getElementById('btnNudgeClose');
+            // Always rebuild the button HTML to restore the timer span
+            btn.innerHTML = 'Reintentar en <span class="countdown-timer" id="nudgeTimer">5</span>s';
+            btn.disabled = true;
+            let timeLeft = 5;
+            
+            const interval = setInterval(() => {
+                timeLeft--;
+                const timerSpan = document.getElementById('nudgeTimer');
+                if (timerSpan) timerSpan.innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    btn.disabled = false;
+                    btn.innerHTML = "Entendido, Reintentar";
+                }
+            }, 1000);
+        }
+
+        function closeNudge() {
+            document.getElementById('nudgeOverlay').classList.remove('active');
+        }
+
+        function finishSimulation() {
+            document.getElementById('statusBar').style.display = 'none';
+            document.getElementById('screenResults').classList.add('active');
+            document.getElementById('finalScoreVal').innerText = baseScore.toFixed(1);
+            
+            // Build Results Summary HTML on screen
+            let summaryHTML = `
+                <div style="display:flex; justify-content:space-around; background:#f8fafc; padding:15px; border-radius:8px; margin:20px 0; border:1px solid #e2e8f0;">
+                    <div><strong>Aciertos:</strong> <span style="color:#10b981; font-weight:bold;">${totalAciertos}</span></div>
+                    <div><strong>Desaciertos (Errores):</strong> <span style="color:#ef4444; font-weight:bold;">${totalDesaciertos}</span></div>
+                    <div><strong>Vidas Restantes:</strong> <span style="color:#0284c7; font-weight:bold;">${lives}/3</span></div>
+                </div>
+                <h4 style="margin-top:20px; margin-bottom:10px; font-size:14px; text-transform:uppercase; color:#64748b;">Desglose de Ejercicios Desarrollados:</h4>
+                <div style="text-align:left; display:flex; flex-direction:column; gap:10px;">
+            `;
+            
+            logDesempeno.forEach(item => {
+                summaryHTML += `
+                    <div style="background:white; border:1px solid #e2e8f0; border-left:4px solid #10b981; padding:12px; border-radius:6px; font-size:13px;">
+                        <strong style="color:#0f172a;">${item.mision}: ${item.titulo}</strong>
+                        ${item.pregunta ? `<div style="font-size:12px; color:#475569; margin-top:4px; font-style:italic;"><strong>Pregunta/Instrucción:</strong> ${item.pregunta}</div>` : ''}
+                        <div style="color:#0284c7; margin-top:4px; font-weight:600;"><strong>Respuesta Registrada:</strong> ${item.detalle}</div>
+                        <div style="font-size:11px; color:${item.errores > 0 ? '#ef4444' : '#10b981'}; margin-top:4px;">Reintentos / Errores en esta misión: ${item.errores}</div>
+                    </div>
+                `;
+            });
+            summaryHTML += `</div>`;
+            
+            const resultsCard = document.getElementById('screenResults');
+            let logContainer = document.getElementById('onScreenLogContainer');
+            if (!logContainer) {
+                logContainer = document.createElement('div');
+                logContainer.id = 'onScreenLogContainer';
+                resultsCard.insertBefore(logContainer, resultsCard.querySelector('div[style*="display: flex"]'));
+            }
+            logContainer.innerHTML = summaryHTML;
+        }
+
+        // Output generators
+        function downloadPDFDirect() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const now = new Date().toLocaleString();
+            
+            // Header Bar
+            doc.setFillColor(15, 23, 42); // slate-900
+            doc.rect(0, 0, 210, 32, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(13);
+            doc.text("IUTEMBI - COMPROBANTE OFICIAL DE EVALUACIÓN", 14, 13);
+            doc.setFontSize(9);
+            doc.setFont("Helvetica", "normal");
+            doc.text("Electiva V - Emprendimiento e Innovación Empresarial | Unidad IV (Parte 1) - Plan de Negocios y Estructura Organizativa", 14, 20);
+            doc.text("Fecha y Hora: " + now, 14, 26);
+
+            // Student/Team Section
+            doc.setTextColor(15, 23, 42);
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(10);
+            doc.text("ESTUDIANTE(S) / INTEGRANTES:", 14, 42);
+            doc.setFont("Helvetica", "normal");
+            let y = 48;
+            teamMembers.forEach(m => {
+                doc.text("• " + m, 18, y);
+                y += 6;
+            });
+
+            // Evaluation Summary Box
+            y += 4;
+            doc.setFillColor(248, 250, 252);
+            doc.setDrawColor(226, 232, 240);
+            doc.roundedRect(14, y, 182, 28, 3, 3, 'FD');
+            
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(9);
+            doc.setTextColor(100, 116, 139);
+            doc.text("PUNTUACIÓN OBTENIDA", 20, y + 8);
+            doc.text("TOTAL ACIERTOS", 85, y + 8);
+            doc.text("TOTAL DESACIERTOS", 135, y + 8);
+
+            doc.setFontSize(16);
+            doc.setFont("Helvetica", "bold");
+            doc.setTextColor(16, 185, 129); // green
+            doc.text(baseScore.toFixed(1) + " / 5.0 pts", 20, y + 20);
+            
+            doc.setTextColor(15, 23, 42);
+            doc.text(totalAciertos.toString() + " misiones", 85, y + 20);
+            
+            doc.setTextColor(239, 68, 68); // red
+            doc.text(totalDesaciertos.toString() + " errores", 135, y + 20);
+
+            // Breakdown Section Title
+            y += 36;
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(10);
+            doc.setTextColor(15, 23, 42);
+            doc.text("DETALLE DE EJERCICIOS Y RESPUESTAS DESARROLLADAS:", 14, y);
+            y += 8;
+
+            // Loop through logged modules - render each as a proper contained card
+            logDesempeno.forEach((item) => {
+                let tituloText = `${item.mision}: ${item.titulo}`;
+                let estadoText = `Estado: Completado | Errores en esta misión: ${item.errores}`;
+                
+                // Max text width: card is 182mm starting at x=14 (ends at 196).
+                // Text starts at x=18, so max = 196 - 18 - 4(padding) = 174mm
+                // Use 155mm to be very safe
+                const maxW = 155;
+                
+                // Set correct fonts BEFORE measuring
+                doc.setFont("Helvetica", "italic");
+                doc.setFontSize(7.5);
+                let preguntaLines = item.pregunta ? doc.splitTextToSize("Instrucción: " + item.pregunta, maxW) : [];
+                
+                doc.setFont("Helvetica", "normal");
+                doc.setFontSize(7.5);
+                let respuestaLines = doc.splitTextToSize("Respuesta: " + item.detalle, maxW);
+                
+                // Calculate total card height
+                const pad = 5;  // top/bottom padding
+                const lineH_title = 4;
+                const lineH_small = 3.2;
+                const sectionGap = 3;
+                
+                let contentH = lineH_title; // title line
+                if (preguntaLines.length > 0) contentH += sectionGap + (preguntaLines.length * lineH_small);
+                contentH += sectionGap + (respuestaLines.length * lineH_small);
+                contentH += sectionGap + lineH_small; // status line
+                
+                let cardHeight = contentH + (pad * 2);
+                
+                if (y + cardHeight > 270) {
+                    doc.addPage();
+                    y = 20;
+                }
+                
+                // Draw card background
+                doc.setFillColor(255, 255, 255);
+                doc.setDrawColor(226, 232, 240);
+                doc.roundedRect(14, y, 182, cardHeight, 2, 2, 'FD');
+                
+                let curY = y + pad + lineH_title;
+                
+                // Title
+                doc.setFont("Helvetica", "bold");
+                doc.setFontSize(9);
+                doc.setTextColor(2, 132, 199);
+                doc.text(tituloText, 18, curY);
+                curY += sectionGap;
+                
+                // Question / Instruction
+                if (preguntaLines.length > 0) {
+                    doc.setFont("Helvetica", "italic");
+                    doc.setFontSize(7.5);
+                    doc.setTextColor(100, 116, 139);
+                    preguntaLines.forEach(line => {
+                        curY += lineH_small;
+                        doc.text(line, 18, curY);
+                    });
+                    curY += sectionGap;
+                }
+                
+                // Answer (use normal weight, not bold, to avoid wide glyphs)
+                doc.setFont("Helvetica", "normal");
+                doc.setFontSize(7.5);
+                doc.setTextColor(15, 23, 42);
+                respuestaLines.forEach(line => {
+                    curY += lineH_small;
+                    doc.text(line, 18, curY);
+                });
+                curY += sectionGap;
+                
+                // Errors/Status
+                doc.setFont("Helvetica", "normal");
+                doc.setFontSize(7);
+                doc.setTextColor(item.errores > 0 ? 239 : 16, item.errores > 0 ? 68 : 185, item.errores > 0 ? 68 : 129);
+                curY += lineH_small;
+                doc.text(estadoText, 18, curY);
+                
+                y += cardHeight + 4;
+            });
+
+            // Footer Code
+            doc.setFontSize(7.5);
+            doc.setTextColor(148, 163, 184);
+            const hash = "IUTEMBI-EVAL-" + Math.random().toString(36).substring(2, 9).toUpperCase();
+            doc.text(`Código Único de Verificación: ${hash} | Documento Oficial de Evaluación`, 14, 287);
+
+            // Dynamic Filename: actividad_unidad_{NRO}_{NOMBRES}.pdf
+            let nombresClean = teamMembers.join("_y_").replace(/[^a-zA-Z0-9_]/g, "_").substring(0, 45);
+            let unidadNum = "4";
+            let filename = `actividad_unidad_${unidadNum}_${nombresClean}.pdf`;
+
+            // Save PDF Blob
+            const blob = doc.output('blob');
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => { document.body.removeChild(link); }, 100);
+        }
+
+        let data_prefix = "sabado4_unidad4";
+
+        function printNatively() {
+            window.print();
+        }
+
+        // Initialize
+        initWelcome();
+
+        // INJECTED MODULES JS
+        
+        let selectedItem1 = null;
+        let matches1 = {};
+        let erroresModulo1 = 0;
+        const itemTexts1 = ["P\u00e9rdida de tiempo del personal de oficina comprando caf\u00e9.", "Oficinas medianas con m\u00e1s de 20 empleados en zonas financieras.", "Abastecimiento express de snacks corporativo en menos de 2 horas.", "Visitas directas a administradores y plataforma web.", "Ser la empresa de delivery m\u00e1s famosa de la ciudad.", "Cualquier persona que coma snacks y tome caf\u00e9."];
+        const correctMatches1 = {"0": "Problema", "1": "Segmento de Clientes", "2": "Propuesta de Valor \u00danica", "3": "Canales", "4": "Descartados", "5": "Descartados"};
+        
+        function selectItem1(evt, id) {
+            if (evt) evt.stopPropagation();
+            const pool = document.getElementById('items_list_1');
+            const el = document.getElementById('item_1_' + id);
+            
+            if (el.parentElement.id !== 'items_list_1') {
+                pool.appendChild(el);
+                el.style.borderColor = '#e2e8f0';
+                el.style.background = 'white';
+                delete matches1[id];
+                selectedItem1 = null;
+                return;
+            }
+            
+            document.querySelectorAll('#items_list_1 .item-drag').forEach(e => {
+                if (e.parentElement.id === 'items_list_1') e.style.borderColor = '#e2e8f0';
+            });
+            el.style.borderColor = '#0284c7';
+            selectedItem1 = id;
+        }
+
+        function selectCat1(cat) {
+            if (selectedItem1 !== null) {
+                let el = document.getElementById('item_1_' + selectedItem1);
+                el.style.borderColor = '#0284c7';
+                el.style.background = '#f0f9ff';
+                document.getElementById('cat_1_' + cat).appendChild(el);
+                matches1[selectedItem1] = cat;
+                selectedItem1 = null;
+            }
+        }
+
+        function validarMod1() {
+            if (Object.keys(matches1).length < 6) {
+                alert('Asigna todos los conceptos primero antes de validar.'); 
+                return;
+            }
+            let errores = 0;
+            const pool = document.getElementById('items_list_' + 1);
+            
+            for (let key in matches1) {
+                let el = document.getElementById('item_' + 1 + '_' + key);
+                if (matches1[key] !== correctMatches1[key]) {
+                    errores++;
+                    pool.appendChild(el);
+                    el.style.borderColor = '#ef4444';
+                    el.style.background = '#fef2f2';
+                    delete matches1[key];
+                } else {
+                    el.style.borderColor = '#10b981';
+                    el.style.background = '#ecfdf5';
+                }
+            }
+            
+            if (errores > 0) {
+                erroresModulo1 += errores;
+                triggerError("Revisa los elementos. Asegúrate de enviar los objetivos vanidosos a 'Descartados'.");
+            } else {
+                let resumen = Object.keys(matches1).map(k => '• ' + itemTexts1[k] + ' => ' + matches1[k]).join('\n');
+                registrarProgresoModulo("El Canvas: Estructuración Estratégica", "Asigna cada elemento estratégico del caso SwiftCart a su respectivo bloque del Lean Canvas. Envía a 'Descartados' el ruido o las trampas.", resumen, erroresModulo1);
+                proceedToNextModule();
+            }
+        }
+        
+
+        const escenarioCorrecto2 = 1;
+        const opcionesTexts2 = ["Redactar una proyecci\u00f3n financiera a 5 a\u00f1os basada en encuestas online a amigos de la universidad.", "Visitar 10 oficinas del sector, entrevistar a los secretarios sobre su rutina de compras y ofrecer un piloto inmediato con un grupo de WhatsApp.", "Alquilar una bodega comercial y comprar snacks al por mayor para estar listos cuando los clientes decidan llamar."];
+        let erroresModulo2 = 0;
+        
+        function checkEscenario2(idx) {
+            if (idx === escenarioCorrecto2) {
+                registrarProgresoModulo("Validación en el Terreno", "Selecciona la estrategia de validación de problema con Early Adopters que requiera la menor inversión y ofrezca el mayor aprendizaje.", opcionesTexts2[idx], erroresModulo2);
+                proceedToNextModule();
+            } else {
+                erroresModulo2++;
+                triggerError("Comprar stock por adelantado o redactar planes teóricos no valida si el cliente pagará por tu solución real.");
+            }
+        }
+        
+
+
+
+    </script>
+</body>
+</html>

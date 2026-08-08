@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arquitectura del Computador | Unidad 4: Arquitectura de Computadoras Avanzadas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --border-color: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --primary: #0284c7;
+            --primary-hover: #0369a1;
+            --success: #10b981;
+            --error: #ef4444;
+            --font-family: 'Outfit', sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-main);
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 24px 24px;
+            color: var(--text-main);
+            font-family: var(--font-family);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 850px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            padding: 40px;
+            position: relative;
+        }
+
+        /* Top Bar: Hearts and Progress */
+        .top-status-bar {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .lives-container {
+            display: flex;
+            gap: 5px;
+            color: var(--error);
+            font-size: 20px;
+        }
+        
+        .life-heart {
+            transition: all 0.3s;
+        }
+        .life-heart.lost {
+            color: #cbd5e1;
+            transform: scale(0.8);
+        }
+
+        .progress-indicator {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        /* Screens */
+        .screen { display: none; opacity: 0; transform: translateY(8px); transition: all 0.3s; }
+        .screen.active { display: block; opacity: 1; transform: translateY(0); }
+
+        /* Typography */
+        h1 { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+        .app-subtitle { font-size: 12px; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 20px; display: block; }
+        h2 { font-size: 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+        h2::before { content: ''; width: 4px; height: 16px; background-color: var(--primary); border-radius: 2px; }
+        p.description { font-size: 14.5px; color: var(--text-muted); line-height: 1.5; margin-bottom: 24px; }
+
+        /* Form & Buttons */
+        .input-group { margin-bottom: 15px; }
+        .text-input { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-family: var(--font-family); }
+        .btn { padding: 12px 24px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: var(--font-family); }
+        .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+        .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); }
+        
+        .team-members-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+
+        /* Nudge Modal (Hardcore Mode) */
+        .nudge-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.4); backdrop-filter: blur(2px); z-index: 100; align-items: center; justify-content: center; }
+        .nudge-overlay.active { display: flex; }
+        .nudge-card { background: white; padding: 25px; border-radius: 12px; width: 100%; max-width: 460px; text-align: center; }
+        .nudge-text { background: #f8fafc; padding: 15px; border-left: 3px solid var(--error); margin: 15px 0; font-size: 14px; text-align: left; }
+        .countdown-timer { font-weight: bold; color: var(--error); margin-left: 5px; }
+
+        /* Module Injected CSS Placeholders */
+        
+
+
+
+
+
+        @media print {
+            body { background: white !important; }
+            .app-container, .nudge-overlay { display: none !important; }
+            #printReportTemplate { display: block !important; }
+        }
+        #printReportTemplate { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- Top Status Bar (Lives) -->
+        <div class="top-status-bar" id="statusBar">
+            <div class="lives-container" id="livesContainer">
+                <span class="life-heart" id="life_3">❤️</span>
+                <span class="life-heart" id="life_2">❤️</span>
+                <span class="life-heart" id="life_1">❤️</span>
+            </div>
+            <div class="progress-indicator">Módulo <span id="currentMod">0</span> de 4</div>
+        </div>
+
+        <!-- SCREEN 0: Welcome / Team Input -->
+        <div class="screen active" id="screenWelcome">
+            <span class="app-subtitle">Arquitectura del Computador | Unidad 4: Arquitectura de Computadoras Avanzadas</span>
+            <h1>La Batalla del Silicio: RISC vs CISC y la Revolución del Paralelismo</h1>
+            <p class="description">Experimenta con las diferencias de diseño entre microprocesadores de instrucciones complejas (CISC) y de instrucciones reducidas (RISC). Analiza cómo optimizar el procesamiento en paralelo mediante la segmentación (pipelining) y calcula los límites físicos reales según la Ley de Amdahl.</p>
+
+            <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+                <strong>Modalidad:</strong> Trabajo en Equipo (El sistema pedirá el nombre de todos los integrantes)
+            </div>
+
+            <div id="teamInputArea">
+                <!-- Injected via JS based on modalidad -->
+            </div>
+
+            <button class="btn" onclick="startSimulation()">Iniciar Misión</button>
+        </div>
+
+        <!-- INJECTED MODULES -->
+        <div class="screen module-screen" id="module_1"><h2>Misión 1: El Duelo RISC vs CISC</h2><p class="description">Asigna cada característica técnica o de diseño al modelo de arquitectura correspondiente (RISC o CISC) haciendo clic en el concepto y luego en el contenedor correcto.</p><div style="background:#f8fafc; border-left:4px solid #0284c7; padding:15px; margin-bottom:20px; font-size:14px; border-radius:6px;"><strong>Contexto del Caso:</strong> Estás diseñando la CPU de un dispositivo IoT de ultra-bajo consumo. Para decidir qué set de instrucciones implementar, debes clasificar correctamente las propiedades de cada arquitectura.</div>
+        <div style="background:#fffbeb; border:1px solid #fef3c7; border-left:4px solid #d97706; padding:15px; margin-bottom:20px; font-size:14px; border-radius:8px;">
+            <strong style="color:#b45309; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <span>💡</span> Pista del Consultor / Advertencia
+            </strong>
+            <p style="color:#78350f; line-height:1.5; margin:0;">¡Cuidado! Los programadores de software adoran CISC porque reduce el tamaño del código compilado, pero los ingenieros de hardware adoran RISC porque un decodificador simple requiere menos transistores, ahorrando energía y reduciendo la disipación térmica.</p>
+        </div>
+        <div id="mod1_container" style="display:flex; gap:20px; margin-bottom:20px;"><div style="flex:1;"><h3>Categorías</h3><div class="cat-drop" onclick="selectCat1('RISC (Instrucciones Reducidas)')" style="padding:15px; border:2px dashed #cbd5e1; margin-top:10px; border-radius:8px; cursor:pointer; min-height:80px;" id="cat_1_RISC (Instrucciones Reducidas)"><strong style="color:#64748b; font-size:13px;">RISC (Instrucciones Reducidas)</strong></div><div class="cat-drop" onclick="selectCat1('CISC (Instrucciones Complejas)')" style="padding:15px; border:2px dashed #cbd5e1; margin-top:10px; border-radius:8px; cursor:pointer; min-height:80px;" id="cat_1_CISC (Instrucciones Complejas)"><strong style="color:#64748b; font-size:13px;">CISC (Instrucciones Complejas)</strong></div></div><div style="flex:1;"><h3>Conceptos (Haz clic para seleccionar/devolver)</h3><div id="items_list_1"><div class="item-drag" id="item_1_0" onclick="selectItem1(event, 0)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Instrucciones de tamaño fijo (por ejemplo, exactamente 32 bits)</div><div class="item-drag" id="item_1_1" onclick="selectItem1(event, 1)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Instrucciones de tamaño variable y formatos complejos</div><div class="item-drag" id="item_1_2" onclick="selectItem1(event, 2)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Acceso a memoria exclusivo mediante instrucciones explícitas Load y Store</div><div class="item-drag" id="item_1_3" onclick="selectItem1(event, 3)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Operaciones matemáticas directas que pueden referenciar operandos en memoria</div><div class="item-drag" id="item_1_4" onclick="selectItem1(event, 4)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Ejecución de casi todas las instrucciones en un único ciclo de reloj</div><div class="item-drag" id="item_1_5" onclick="selectItem1(event, 5)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Uso intensivo de microcódigo en hardware para decodificar instrucciones</div><div class="item-drag" id="item_1_6" onclick="selectItem1(event, 6)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Gran cantidad de registros de propósito general directamente en la CPU</div><div class="item-drag" id="item_1_7" onclick="selectItem1(event, 7)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Pocos registros de propósito general y registros especializados</div></div></div></div><button class="btn" onclick="validarMod1()">Validar Clasificación</button></div>
+<div class="screen module-screen" id="module_2"><h2>Misión 2: Colisión en el Pipeline (Control de Hazards)</h2><p class="description">Analiza la situación del pipeline de instrucciones y selecciona la estrategia óptima para resolver el riesgo de datos detectado.</p><div style="background:#f8fafc; border-left:4px solid #0284c7; padding:15px; margin-bottom:20px; font-size:14px; border-radius:6px;"><strong>Contexto del Caso:</strong> Una instrucción de suma (ADD R1, R2, R3) acaba de calcular su resultado en la etapa de Ejecución (EX), pero la siguiente instrucción (SUB R4, R1, R5) necesita el valor de R1 en la etapa de Decodificación (ID). Si esperamos a que R1 se escriba en el banco de registros, perderemos 2 ciclos de reloj completos (burbujas).</div>
+        <div style="background:#fffbeb; border:1px solid #fef3c7; border-left:4px solid #d97706; padding:15px; margin-bottom:20px; font-size:14px; border-radius:8px;">
+            <strong style="color:#b45309; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <span>💡</span> Pista del Consultor / Advertencia
+            </strong>
+            <p style="color:#78350f; line-height:1.5; margin:0;">Pista del Consultor: Introducir burbujas (stalls) en el pipeline es la solución fácil, pero disminuye la tasa de instrucciones por ciclo (IPC). ¿Habrá alguna forma física de 'inyectar' el resultado del cálculo a la entrada de la ALU sin pasar por el banco de registros primero?</p>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;"><button class="btn btn-outline" style="text-align:left;" onclick="checkEscenario2(0)">Opción A: Insertar burbujas (stalls) por hardware para pausar la instrucción SUB hasta que ADD complete la etapa de Write-Back (WB).</button><button class="btn btn-outline" style="text-align:left;" onclick="checkEscenario2(1)">Opción B: Implementar reenvío de datos (Data Forwarding / Bypassing) mediante caminos físicos de bypass desde la salida de la etapa EX directamente a la entrada de la ALU en la etapa EX de la siguiente instrucción.</button><button class="btn btn-outline" style="text-align:left;" onclick="checkEscenario2(2)">Opción C: Incrementar la frecuencia de reloj del CPU al doble para que la escritura en el registro se realice antes.</button><button class="btn btn-outline" style="text-align:left;" onclick="checkEscenario2(3)">Opción D: Desactivar la segmentación (pipelining) del procesador y volver a un modelo de ejecución de ciclo único.</button></div></div>
+<div class="screen module-screen" id="module_3"><h2>Misión 3: La Taxonomía de Flynn</h2><p class="description">Une con cables virtuales cada sistema o técnica con su categoría correspondiente (SIMD o MIMD).</p><div style="background:#f8fafc; border-left:4px solid #0284c7; padding:15px; margin-bottom:20px; font-size:14px; border-radius:6px;"><strong>Contexto del Caso:</strong> Tu equipo está evaluando hardware para procesamiento masivo de datos. Debes clasificar los subsistemas según cómo manejan los flujos de instrucciones y flujos de datos.</div>
+        <div style="background:#fffbeb; border:1px solid #fef3c7; border-left:4px solid #d97706; padding:15px; margin-bottom:20px; font-size:14px; border-radius:8px;">
+            <strong style="color:#b45309; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <span>💡</span> Pista del Consultor / Advertencia
+            </strong>
+            <p style="color:#78350f; line-height:1.5; margin:0;">Dato del Consultor: SIMD es excelente para gráficos e inteligencia artificial porque una sola operación matemática (ej. multiplicar por un escalar) se aplica a miles de píxeles o pesos en paralelo. MIMD es el rey de los servidores y sistemas operativos porque permite que núcleos independientes hagan tareas totalmente distintas.</p>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px;"><div style="width:45%;"><h3>Conceptos</h3><div id="origenes_3"><div class="cable-origin" id="orig_3_0" onclick="selectOrigin3(0)" style="padding:15px; background:white; border:2px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer;">GPUs modernas</div><div class="cable-origin" id="orig_3_1" onclick="selectOrigin3(1)" style="padding:15px; background:white; border:2px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer;">TPUs para Redes Neuronales</div><div class="cable-origin" id="orig_3_2" onclick="selectOrigin3(2)" style="padding:15px; background:white; border:2px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer;">Servidor web multinúcleo</div><div class="cable-origin" id="orig_3_3" onclick="selectOrigin3(3)" style="padding:15px; background:white; border:2px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer;">Clúster en la nube</div></div></div><div style="width:45%;"><h3>Categorías</h3><div id="destinos_3"><div class="cable-dest" id="dest_3_0" onclick="selectDest3(0)" style="padding:15px; background:#f8fafc; border:2px dashed #cbd5e1; margin-top:10px; border-radius:8px; cursor:pointer;">MIMD</div><div class="cable-dest" id="dest_3_1" onclick="selectDest3(1)" style="padding:15px; background:#f8fafc; border:2px dashed #cbd5e1; margin-top:10px; border-radius:8px; cursor:pointer;">SIMD</div></div></div></div><div id="matches_list_3" style="margin-bottom:20px; min-height:50px; padding:10px; background:#f1f5f9; border-radius:8px;"><strong>Conexiones realizadas:</strong><br></div><button class="btn" onclick="validarCables3()">Validar Conexiones</button><button class="btn btn-outline" onclick="resetCables3()" style="margin-left:10px;">Reiniciar</button></div>
+<div class="screen module-screen" id="module_4"><h2>Misión 4: La Barrera Física de Amdahl</h2><p class="description">Evalúa el siguiente escenario corporativo y determina si la afirmación es verdadera o falsa.</p><div style="background:#f8fafc; border-left:4px solid #0284c7; padding:15px; margin-bottom:20px; font-size:14px; border-radius:6px;"><strong>Contexto del Caso:</strong> Tienes un programa de simulación física donde el 80% de las tareas de cómputo se pueden ejecutar perfectamente en paralelo. El gerente de TI afirma: 'Si compramos un procesador avanzado de 16 núcleos lógicos, el programa correrá 16 veces más rápido (Speedup de 16.0x).'</div>
+        <div style="background:#fffbeb; border:1px solid #fef3c7; border-left:4px solid #d97706; padding:15px; margin-bottom:20px; font-size:14px; border-radius:8px;">
+            <strong style="color:#b45309; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <span>💡</span> Pista del Consultor / Advertencia
+            </strong>
+            <p style="color:#78350f; line-height:1.5; margin:0;">Fórmula clave: Speedup = 1 / (S + P / N), donde S es el porcentaje secuencial (1 - P), P es el porcentaje paralelizable en decimales (0.80) y N es el número de núcleos (16). Realiza la división y suma antes de dividir 1 entre el resultado final.</p>
+        </div>
+        <div style="padding:20px; background:#f8fafc; border-left:4px solid #6366f1; font-size:18px; margin-bottom:20px; font-weight:bold;">"Si compramos un procesador avanzado de 16 núcleos lógicos, el programa correrá 16 veces más rápido (Speedup de 16.0x)."</div><div style="display:flex; gap:15px; margin-bottom:20px;"><button class="btn" style="background:#10b981; flex:1; font-size:16px;" onclick="checkVF4(true)">Verdadero</button><button class="btn" style="background:#ef4444; flex:1; font-size:16px;" onclick="checkVF4(false)">Falso</button></div></div>
+
+
+        <!-- SCREEN RESULTS -->
+        <div class="screen" id="screenResults">
+            <h2>Consola de Diagnóstico Final</h2>
+            <p class="description">Has completado los retos. Revisa tu desempeño y genera el reporte oficial obligatorio.</p>
+            
+            <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 20px;">
+                <h3 style="color: #047857; margin-bottom: 5px;">Puntuación Final</h3>
+                <div style="font-size: 36px; font-weight: 800; color: #10b981;" id="finalScoreVal">0.0</div>
+                <div style="font-size: 12px; color: #047857; text-transform: uppercase;">Sobre 5.0 pts</div>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 30px;">
+                <button class="btn" onclick="downloadPDFDirect()">1. Descargar PDF (Obligatorio)</button>
+                <button class="btn btn-outline" onclick="printNatively()">2. Imprimir / Ver PDF</button>
+            </div>
+            <!-- Botón de reiniciar NO EXISTE (Hardcore mode finality) -->
+        </div>
+
+    </div>
+
+    <!-- NUDGE MODAL -->
+    <div class="nudge-overlay" id="nudgeOverlay">
+        <div class="nudge-card">
+            <div style="font-size: 28px; margin-bottom: 10px;">⚠️</div>
+            <h3 style="margin-bottom: 8px;">Detente y Reflexiona</h3>
+            <div class="nudge-text" id="nudgeText">...</div>
+            <button class="btn" id="btnNudgeClose" disabled onclick="closeNudge()">
+                Reintentar en <span class="countdown-timer" id="nudgeTimer">5</span>s
+            </button>
+        </div>
+    </div>
+
+    <!-- GAME OVER MODAL -->
+    <div class="nudge-overlay" id="gameOverOverlay">
+        <div class="nudge-card">
+            <div style="font-size: 28px; margin-bottom: 10px;">💀</div>
+            <h3 style="margin-bottom: 8px;">Sobrecarga del Sistema</h3>
+            <div class="nudge-text">Has perdido tus 3 intentos en este módulo. El sistema de seguridad ha reiniciado la conexión. Debes comenzar de nuevo.</div>
+            <button class="btn" onclick="location.reload()">Reiniciar Simulación</button>
+        </div>
+    </div>
+
+    <!-- PRINT TEMPLATE -->
+    <div id="printReportTemplate" style="width:100%; max-width:800px; margin:0 auto; padding:20px; font-family: Helvetica, sans-serif;">
+        <div style="border-bottom: 2px solid #2c3e50; padding-bottom: 15px; margin-bottom: 20px;">
+            <h2 style="color: #2c3e50; margin:0;">REPORTE OFICIAL DE EVALUACIÓN</h2>
+            <div style="font-size: 12px; color: #7f8c8d;">Arquitectura del Computador | Unidad 4: Arquitectura de Computadoras Avanzadas</div>
+        </div>
+        <div style="font-size: 12px; margin-bottom: 20px;">
+            <strong>Integrantes del Equipo:</strong><br>
+            <div id="printNames"></div>
+        </div>
+        <div style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 20px; text-align: center;">
+            <div style="font-weight: bold;">CALIFICACIÓN FINAL</div>
+            <div style="font-size: 32px; color: #27ae60; font-weight: bold;" id="printScore">0.0 / 5.0</div>
+        </div>
+    </div>
+
+    <script>
+        // Core Engine State
+        const isTeamMode = true; // boolean injected by python
+        let teamMembers = [];
+        let lives = 3;
+        let currentScore = 0;
+        let totalModules = 4;
+        let currentModuleIndex = 1;
+        let penaltyPerMistake = 0.25; 
+        let baseScore = 5.0;
+
+        // Statistics and Detailed Evaluation Logging
+        let totalAciertos = 0;
+        let totalDesaciertos = 0;
+        let logDesempeno = []; // [{ modulo: "Misión 1", titulo: "...", detalle: "...", errores: N }]
+
+        function registrarProgresoModulo(tituloModulo, preguntaInstruccion, detalleRespuesta, erroresModulo) {
+            totalAciertos++;
+            logDesempeno.push({
+                mision: 'Misión ' + currentModuleIndex,
+                titulo: tituloModulo,
+                pregunta: preguntaInstruccion || '',
+                detalle: detalleRespuesta,
+                errores: erroresModulo || 0
+            });
+        }
+
+        // Init Team Inputs
+        function initWelcome() {
+            const container = document.getElementById('teamInputArea');
+            if (isTeamMode) {
+                container.innerHTML = `
+                    <label class="input-label">Nombres de los Integrantes del Equipo:</label>
+                    <div class="team-members-list" id="memberList">
+                        <input type="text" class="text-input member-input" placeholder="Integrante 1 (Nombre Completo)">
+                        <input type="text" class="text-input member-input" placeholder="Integrante 2 (Nombre Completo)">
+                    </div>
+                    <button class="btn btn-outline" style="font-size:12px; padding:6px 12px;" onclick="addMember()">+ Añadir Integrante</button>
+                `;
+            } else {
+                container.innerHTML = `
+                    <label class="input-label">Tu Nombre Completo:</label>
+                    <input type="text" class="text-input member-input" id="singleName" placeholder="Escribe tu nombre para comenzar...">
+                `;
+            }
+        }
+
+        function addMember() {
+            const list = document.getElementById('memberList');
+            const input = document.createElement('input');
+            input.type = "text";
+            input.className = "text-input member-input";
+            input.placeholder = "Integrante " + (list.children.length + 1);
+            list.appendChild(input);
+        }
+
+        function startSimulation() {
+            const inputs = document.querySelectorAll('.member-input');
+            teamMembers = Array.from(inputs).map(i => i.value.trim()).filter(v => v !== "");
+            
+            if (teamMembers.length === 0) {
+                alert("Debes ingresar al menos un nombre para comenzar.");
+                return;
+            }
+
+            document.getElementById('screenWelcome').classList.remove('active');
+            document.getElementById('statusBar').style.display = 'flex';
+            showModule(1);
+        }
+
+        function showModule(index) {
+            document.querySelectorAll('.module-screen').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById('module_' + index);
+            if (target) {
+                target.classList.add('active');
+                document.getElementById('currentMod').innerText = index;
+            } else {
+                finishSimulation();
+            }
+        }
+
+        function proceedToNextModule() {
+            currentModuleIndex++;
+            showModule(currentModuleIndex);
+        }
+
+        // Hardcore Engine: Nudges and Lives
+        function triggerError(nudgeMessage) {
+            totalDesaciertos++;
+            baseScore -= penaltyPerMistake;
+            if (baseScore < 0) baseScore = 0;
+            
+            loseLife();
+            if (lives > 0) {
+                showNudge(nudgeMessage);
+            }
+        }
+
+        function loseLife() {
+            const heart = document.getElementById('life_' + lives);
+            if (heart) heart.classList.add('lost');
+            lives--;
+            if (lives === 0) {
+                setTimeout(() => {
+                    document.getElementById('gameOverOverlay').classList.add('active');
+                }, 500);
+            }
+        }
+
+        function showNudge(msg) {
+            document.getElementById('nudgeText').innerText = msg;
+            document.getElementById('nudgeOverlay').classList.add('active');
+            
+            const btn = document.getElementById('btnNudgeClose');
+            // Always rebuild the button HTML to restore the timer span
+            btn.innerHTML = 'Reintentar en <span class="countdown-timer" id="nudgeTimer">5</span>s';
+            btn.disabled = true;
+            let timeLeft = 5;
+            
+            const interval = setInterval(() => {
+                timeLeft--;
+                const timerSpan = document.getElementById('nudgeTimer');
+                if (timerSpan) timerSpan.innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    btn.disabled = false;
+                    btn.innerHTML = "Entendido, Reintentar";
+                }
+            }, 1000);
+        }
+
+        function closeNudge() {
+            document.getElementById('nudgeOverlay').classList.remove('active');
+        }
+
+        function finishSimulation() {
+            document.getElementById('statusBar').style.display = 'none';
+            document.getElementById('screenResults').classList.add('active');
+            document.getElementById('finalScoreVal').innerText = baseScore.toFixed(1);
+            
+            // Build Results Summary HTML on screen
+            let summaryHTML = `
+                <div style="display:flex; justify-content:space-around; background:#f8fafc; padding:15px; border-radius:8px; margin:20px 0; border:1px solid #e2e8f0;">
+                    <div><strong>Aciertos:</strong> <span style="color:#10b981; font-weight:bold;">${totalAciertos}</span></div>
+                    <div><strong>Desaciertos (Errores):</strong> <span style="color:#ef4444; font-weight:bold;">${totalDesaciertos}</span></div>
+                    <div><strong>Vidas Restantes:</strong> <span style="color:#0284c7; font-weight:bold;">${lives}/3</span></div>
+                </div>
+                <h4 style="margin-top:20px; margin-bottom:10px; font-size:14px; text-transform:uppercase; color:#64748b;">Desglose de Ejercicios Desarrollados:</h4>
+                <div style="text-align:left; display:flex; flex-direction:column; gap:10px;">
+            `;
+            
+            logDesempeno.forEach(item => {
+                summaryHTML += `
+                    <div style="background:white; border:1px solid #e2e8f0; border-left:4px solid #10b981; padding:12px; border-radius:6px; font-size:13px;">
+                        <strong style="color:#0f172a;">${item.mision}: ${item.titulo}</strong>
+                        ${item.pregunta ? `<div style="font-size:12px; color:#475569; margin-top:4px; font-style:italic;"><strong>Pregunta/Instrucción:</strong> ${item.pregunta}</div>` : ''}
+                        <div style="color:#0284c7; margin-top:4px; font-weight:600;"><strong>Respuesta Registrada:</strong> ${item.detalle}</div>
+                        <div style="font-size:11px; color:${item.errores > 0 ? '#ef4444' : '#10b981'}; margin-top:4px;">Reintentos / Errores en esta misión: ${item.errores}</div>
+                    </div>
+                `;
+            });
+            summaryHTML += `</div>`;
+            
+            const resultsCard = document.getElementById('screenResults');
+            let logContainer = document.getElementById('onScreenLogContainer');
+            if (!logContainer) {
+                logContainer = document.createElement('div');
+                logContainer.id = 'onScreenLogContainer';
+                resultsCard.insertBefore(logContainer, resultsCard.querySelector('div[style*="display: flex"]'));
+            }
+            logContainer.innerHTML = summaryHTML;
+        }
+
+        // Output generators
+        function downloadPDFDirect() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const now = new Date().toLocaleString();
+            
+            // Header Bar
+            doc.setFillColor(15, 23, 42); // slate-900
+            doc.rect(0, 0, 210, 32, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(13);
+            doc.text("IUTEMBI - COMPROBANTE OFICIAL DE EVALUACIÓN", 14, 13);
+            doc.setFontSize(9);
+            doc.setFont("Helvetica", "normal");
+            doc.text("Arquitectura del Computador | Unidad 4: Arquitectura de Computadoras Avanzadas", 14, 20);
+            doc.text("Fecha y Hora: " + now, 14, 26);
+
+            // Student/Team Section
+            doc.setTextColor(15, 23, 42);
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(10);
+            doc.text("ESTUDIANTE(S) / INTEGRANTES:", 14, 42);
+            doc.setFont("Helvetica", "normal");
+            let y = 48;
+            teamMembers.forEach(m => {
+                doc.text("• " + m, 18, y);
+                y += 6;
+            });
+
+            // Evaluation Summary Box
+            y += 4;
+            doc.setFillColor(248, 250, 252);
+            doc.setDrawColor(226, 232, 240);
+            doc.roundedRect(14, y, 182, 28, 3, 3, 'FD');
+            
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(9);
+            doc.setTextColor(100, 116, 139);
+            doc.text("PUNTUACIÓN OBTENIDA", 20, y + 8);
+            doc.text("TOTAL ACIERTOS", 85, y + 8);
+            doc.text("TOTAL DESACIERTOS", 135, y + 8);
+
+            doc.setFontSize(16);
+            doc.setFont("Helvetica", "bold");
+            doc.setTextColor(16, 185, 129); // green
+            doc.text(baseScore.toFixed(1) + " / 5.0 pts", 20, y + 20);
+            
+            doc.setTextColor(15, 23, 42);
+            doc.text(totalAciertos.toString() + " misiones", 85, y + 20);
+            
+            doc.setTextColor(239, 68, 68); // red
+            doc.text(totalDesaciertos.toString() + " errores", 135, y + 20);
+
+            // Breakdown Section Title
+            y += 36;
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(10);
+            doc.setTextColor(15, 23, 42);
+            doc.text("DETALLE DE EJERCICIOS Y RESPUESTAS DESARROLLADAS:", 14, y);
+            y += 8;
+
+            // Loop through logged modules - render each as a proper contained card
+            logDesempeno.forEach((item) => {
+                let tituloText = `${item.mision}: ${item.titulo}`;
+                let estadoText = `Estado: Completado | Errores en esta misión: ${item.errores}`;
+                
+                // Max text width: card is 182mm starting at x=14 (ends at 196).
+                // Text starts at x=18, so max = 196 - 18 - 4(padding) = 174mm
+                // Use 155mm to be very safe
+                const maxW = 155;
+                
+                // Set correct fonts BEFORE measuring
+                doc.setFont("Helvetica", "italic");
+                doc.setFontSize(7.5);
+                let preguntaLines = item.pregunta ? doc.splitTextToSize("Instrucción: " + item.pregunta, maxW) : [];
+                
+                doc.setFont("Helvetica", "normal");
+                doc.setFontSize(7.5);
+                let respuestaLines = doc.splitTextToSize("Respuesta: " + item.detalle, maxW);
+                
+                // Calculate total card height
+                const pad = 5;  // top/bottom padding
+                const lineH_title = 4;
+                const lineH_small = 3.2;
+                const sectionGap = 3;
+                
+                let contentH = lineH_title; // title line
+                if (preguntaLines.length > 0) contentH += sectionGap + (preguntaLines.length * lineH_small);
+                contentH += sectionGap + (respuestaLines.length * lineH_small);
+                contentH += sectionGap + lineH_small; // status line
+                
+                let cardHeight = contentH + (pad * 2);
+                
+                if (y + cardHeight > 270) {
+                    doc.addPage();
+                    y = 20;
+                }
+                
+                // Draw card background
+                doc.setFillColor(255, 255, 255);
+                doc.setDrawColor(226, 232, 240);
+                doc.roundedRect(14, y, 182, cardHeight, 2, 2, 'FD');
+                
+                let curY = y + pad + lineH_title;
+                
+                // Title
+                doc.setFont("Helvetica", "bold");
+                doc.setFontSize(9);
+                doc.setTextColor(2, 132, 199);
+                doc.text(tituloText, 18, curY);
+                curY += sectionGap;
+                
+                // Question / Instruction
+                if (preguntaLines.length > 0) {
+                    doc.setFont("Helvetica", "italic");
+                    doc.setFontSize(7.5);
+                    doc.setTextColor(100, 116, 139);
+                    preguntaLines.forEach(line => {
+                        curY += lineH_small;
+                        doc.text(line, 18, curY);
+                    });
+                    curY += sectionGap;
+                }
+                
+                // Answer (use normal weight, not bold, to avoid wide glyphs)
+                doc.setFont("Helvetica", "normal");
+                doc.setFontSize(7.5);
+                doc.setTextColor(15, 23, 42);
+                respuestaLines.forEach(line => {
+                    curY += lineH_small;
+                    doc.text(line, 18, curY);
+                });
+                curY += sectionGap;
+                
+                // Errors/Status
+                doc.setFont("Helvetica", "normal");
+                doc.setFontSize(7);
+                doc.setTextColor(item.errores > 0 ? 239 : 16, item.errores > 0 ? 68 : 185, item.errores > 0 ? 68 : 129);
+                curY += lineH_small;
+                doc.text(estadoText, 18, curY);
+                
+                y += cardHeight + 4;
+            });
+
+            // Footer Code
+            doc.setFontSize(7.5);
+            doc.setTextColor(148, 163, 184);
+            const hash = "IUTEMBI-EVAL-" + Math.random().toString(36).substring(2, 9).toUpperCase();
+            doc.text(`Código Único de Verificación: ${hash} | Documento Oficial de Evaluación`, 14, 287);
+
+            // Dynamic Filename: actividad_unidad_{NRO}_{NOMBRES}.pdf
+            let nombresClean = teamMembers.join("_y_").replace(/[^a-zA-Z0-9_]/g, "_").substring(0, 45);
+            let unidadNum = "4";
+            let filename = `actividad_unidad_${unidadNum}_${nombresClean}.pdf`;
+
+            // Save PDF Blob
+            const blob = doc.output('blob');
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => { document.body.removeChild(link); }, 100);
+        }
+
+        let data_prefix = "sabado4_unidad4";
+
+        function printNatively() {
+            window.print();
+        }
+
+        // Initialize
+        initWelcome();
+
+        // INJECTED MODULES JS
+        
+        let selectedItem1 = null;
+        let matches1 = {};
+        let erroresModulo1 = 0;
+        const itemTexts1 = ["Instrucciones de tama\u00f1o fijo (por ejemplo, exactamente 32 bits)", "Instrucciones de tama\u00f1o variable y formatos complejos", "Acceso a memoria exclusivo mediante instrucciones expl\u00edcitas Load y Store", "Operaciones matem\u00e1ticas directas que pueden referenciar operandos en memoria", "Ejecuci\u00f3n de casi todas las instrucciones en un \u00fanico ciclo de reloj", "Uso intensivo de microc\u00f3digo en hardware para decodificar instrucciones", "Gran cantidad de registros de prop\u00f3sito general directamente en la CPU", "Pocos registros de prop\u00f3sito general y registros especializados"];
+        const correctMatches1 = {"0": "RISC (Instrucciones Reducidas)", "1": "CISC (Instrucciones Complejas)", "2": "RISC (Instrucciones Reducidas)", "3": "CISC (Instrucciones Complejas)", "4": "RISC (Instrucciones Reducidas)", "5": "CISC (Instrucciones Complejas)", "6": "RISC (Instrucciones Reducidas)", "7": "CISC (Instrucciones Complejas)"};
+        
+        function selectItem1(evt, id) {
+            if (evt) evt.stopPropagation();
+            const pool = document.getElementById('items_list_1');
+            const el = document.getElementById('item_1_' + id);
+            
+            if (el.parentElement.id !== 'items_list_1') {
+                pool.appendChild(el);
+                el.style.borderColor = '#e2e8f0';
+                el.style.background = 'white';
+                delete matches1[id];
+                selectedItem1 = null;
+                return;
+            }
+            
+            document.querySelectorAll('#items_list_1 .item-drag').forEach(e => {
+                if (e.parentElement.id === 'items_list_1') e.style.borderColor = '#e2e8f0';
+            });
+            el.style.borderColor = '#0284c7';
+            selectedItem1 = id;
+        }
+
+        function selectCat1(cat) {
+            if (selectedItem1 !== null) {
+                let el = document.getElementById('item_1_' + selectedItem1);
+                el.style.borderColor = '#0284c7';
+                el.style.background = '#f0f9ff';
+                document.getElementById('cat_1_' + cat).appendChild(el);
+                matches1[selectedItem1] = cat;
+                selectedItem1 = null;
+            }
+        }
+
+        function validarMod1() {
+            if (Object.keys(matches1).length < 8) {
+                alert('Asigna todos los conceptos primero antes de validar.'); 
+                return;
+            }
+            let errores = 0;
+            const pool = document.getElementById('items_list_' + 1);
+            
+            for (let key in matches1) {
+                let el = document.getElementById('item_' + 1 + '_' + key);
+                if (matches1[key] !== correctMatches1[key]) {
+                    errores++;
+                    pool.appendChild(el);
+                    el.style.borderColor = '#ef4444';
+                    el.style.background = '#fef2f2';
+                    delete matches1[key];
+                } else {
+                    el.style.borderColor = '#10b981';
+                    el.style.background = '#ecfdf5';
+                }
+            }
+            
+            if (errores > 0) {
+                erroresModulo1 += errores;
+                triggerError("Una de las asignaciones no corresponde. Recuerda: RISC ejecuta instrucciones en un solo ciclo y delega el esfuerzo al compilador; CISC implementa instrucciones complejas que toman varios ciclos mediante microcódigo interno.");
+            } else {
+                let resumen = Object.keys(matches1).map(k => '• ' + itemTexts1[k] + ' => ' + matches1[k]).join('\n');
+                registrarProgresoModulo("El Duelo RISC vs CISC", "Asigna cada característica técnica o de diseño al modelo de arquitectura correspondiente (RISC o CISC) haciendo clic en el concepto y luego en el contenedor correcto.", resumen, erroresModulo1);
+                proceedToNextModule();
+            }
+        }
+        
+
+        const escenarioCorrecto2 = 1;
+        const opcionesTexts2 = ["Opci\u00f3n A: Insertar burbujas (stalls) por hardware para pausar la instrucci\u00f3n SUB hasta que ADD complete la etapa de Write-Back (WB).", "Opci\u00f3n B: Implementar reenv\u00edo de datos (Data Forwarding / Bypassing) mediante caminos f\u00edsicos de bypass desde la salida de la etapa EX directamente a la entrada de la ALU en la etapa EX de la siguiente instrucci\u00f3n.", "Opci\u00f3n C: Incrementar la frecuencia de reloj del CPU al doble para que la escritura en el registro se realice antes.", "Opci\u00f3n D: Desactivar la segmentaci\u00f3n (pipelining) del procesador y volver a un modelo de ejecuci\u00f3n de ciclo \u00fanico."];
+        let erroresModulo2 = 0;
+        
+        function checkEscenario2(idx) {
+            if (idx === escenarioCorrecto2) {
+                registrarProgresoModulo("Colisión en el Pipeline (Control de Hazards)", "Analiza la situación del pipeline de instrucciones y selecciona la estrategia óptima para resolver el riesgo de datos detectado.", opcionesTexts2[idx], erroresModulo2);
+                proceedToNextModule();
+            } else {
+                erroresModulo2++;
+                triggerError("Esa decisión detendrá el procesador innecesariamente o no solucionará el problema de la dependencia de datos. Revisa la teoría de reenvío de datos (data forwarding).");
+            }
+        }
+        
+
+        const correctPairs3 = {"GPUs modernas": "SIMD", "TPUs para Redes Neuronales": "SIMD", "Servidor web multin\u00facleo": "MIMD", "Cl\u00faster en la nube": "MIMD"};
+        const origenesTexts3 = ["GPUs modernas", "TPUs para Redes Neuronales", "Servidor web multin\u00facleo", "Cl\u00faster en la nube"];
+        const destinosTexts3 = ["MIMD", "SIMD"];
+        let selectedOrig3 = null;
+        let currentPairs3 = {};
+        let erroresModulo3 = 0;
+        
+        function selectOrigin3(idx) {
+            if (currentPairs3[origenesTexts3[idx]]) return; // already paired
+            document.querySelectorAll('#origenes_3 .cable-origin').forEach(el => el.style.borderColor = '#e2e8f0');
+            let el = document.getElementById('orig_3_' + idx);
+            el.style.borderColor = '#0ea5e9';
+            selectedOrig3 = idx;
+        }
+        
+        function selectDest3(idx) {
+            if (selectedOrig3 === null) return;
+            let origText = origenesTexts3[selectedOrig3];
+            let destText = destinosTexts3[idx];
+            
+            currentPairs3[origText] = destText;
+            
+            // visually mark as paired
+            document.getElementById('orig_3_' + selectedOrig3).style.background = '#e0f2fe';
+            document.getElementById('orig_3_' + selectedOrig3).style.borderColor = '#0ea5e9';
+            
+            selectedOrig3 = null;
+            renderMatches3();
+        }
+        
+        function renderMatches3() {
+            let htmlStr = '<strong>Conexiones realizadas:</strong><br>';
+            for (let k in currentPairs3) {
+                htmlStr += '🔌 ' + k + ' ➔ ' + currentPairs3[k] + '<br>';
+            }
+            document.getElementById('matches_list_3').innerHTML = htmlStr;
+        }
+        
+        function resetCables3() {
+            currentPairs3 = {};
+            selectedOrig3 = null;
+            document.querySelectorAll('#origenes_3 .cable-origin').forEach(el => {
+                el.style.borderColor = '#e2e8f0';
+                el.style.background = 'white';
+            });
+            renderMatches3();
+        }
+        
+        function validarCables3() {
+            let origKeys = Object.keys(correctPairs3);
+            if (Object.keys(currentPairs3).length < origKeys.length) {
+                alert('Faltan conexiones por realizar.');
+                return;
+            }
+            
+            let isCorrect = true;
+            for (let k of origKeys) {
+                if (currentPairs3[k] !== correctPairs3[k]) isCorrect = false;
+            }
+            
+            if (isCorrect) {
+                let resumen = origKeys.map(k => k + ' ➔ ' + currentPairs3[k]).join('\n');
+                registrarProgresoModulo("La Taxonomía de Flynn", "Une con cables virtuales cada sistema o técnica con su categoría correspondiente (SIMD o MIMD).", resumen, erroresModulo3);
+                proceedToNextModule();
+            } else {
+                erroresModulo3++;
+                triggerError("Hay cables mal conectados. Recuerda: SIMD procesa múltiples datos con la misma instrucción al mismo tiempo; MIMD procesa múltiples datos con instrucciones independientes (varios programas o hilos).");
+                resetCables3();
+            }
+        }
+        
+
+        const correctVal4 = false;
+        let erroresModulo4 = 0;
+        
+        function checkVF4(ans) {
+            if (ans === correctVal4) {
+                alert("¡Correcto!\n\nExplicación:\nFalso. Por la Ley de Amdahl, el 20% secuencial limita la aceleración total. El speedup máximo teórico será de 1 / (0.20 + 0.05) = 4.0x.");
+                registrarProgresoModulo("La Barrera Física de Amdahl", "Evalúa el siguiente escenario corporativo y determina si la afirmación es verdadera o falsa.", "Respuesta: " + (ans ? "Verdadero" : "Falso") + "\n" + "Falso. Por la Ley de Amdahl, el 20% secuencial limita la aceleración total. El speedup máximo teórico será de 1 / (0.20 + 0.05) = 4.0x.", erroresModulo4);
+                proceedToNextModule();
+            } else {
+                erroresModulo4++;
+                triggerError("El cálculo es incorrecto. S = 0.20, P/N = 0.80 / 16 = 0.05. Suma estos valores y calcula el recíproco.");
+            }
+        }
+        
+
+    </script>
+</body>
+</html>

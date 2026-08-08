@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistemas de Información | Unidad IV: Los Sistemas de Información Gerencial</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --border-color: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --primary: #0284c7;
+            --primary-hover: #0369a1;
+            --success: #10b981;
+            --error: #ef4444;
+            --font-family: 'Outfit', sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-main);
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 24px 24px;
+            color: var(--text-main);
+            font-family: var(--font-family);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 850px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            padding: 40px;
+            position: relative;
+        }
+
+        /* Top Bar: Hearts and Progress */
+        .top-status-bar {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .lives-container {
+            display: flex;
+            gap: 5px;
+            color: var(--error);
+            font-size: 20px;
+        }
+        
+        .life-heart {
+            transition: all 0.3s;
+        }
+        .life-heart.lost {
+            color: #cbd5e1;
+            transform: scale(0.8);
+        }
+
+        .progress-indicator {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        /* Screens */
+        .screen { display: none; opacity: 0; transform: translateY(8px); transition: all 0.3s; }
+        .screen.active { display: block; opacity: 1; transform: translateY(0); }
+
+        /* Typography */
+        h1 { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+        .app-subtitle { font-size: 12px; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 20px; display: block; }
+        h2 { font-size: 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+        h2::before { content: ''; width: 4px; height: 16px; background-color: var(--primary); border-radius: 2px; }
+        p.description { font-size: 14.5px; color: var(--text-muted); line-height: 1.5; margin-bottom: 24px; }
+
+        /* Form & Buttons */
+        .input-group { margin-bottom: 15px; }
+        .text-input { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-family: var(--font-family); }
+        .btn { padding: 12px 24px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: var(--font-family); }
+        .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+        .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); }
+        
+        .team-members-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+
+        /* Nudge Modal (Hardcore Mode) */
+        .nudge-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.4); backdrop-filter: blur(2px); z-index: 100; align-items: center; justify-content: center; }
+        .nudge-overlay.active { display: flex; }
+        .nudge-card { background: white; padding: 25px; border-radius: 12px; width: 100%; max-width: 460px; text-align: center; }
+        .nudge-text { background: #f8fafc; padding: 15px; border-left: 3px solid var(--error); margin: 15px 0; font-size: 14px; text-align: left; }
+        .countdown-timer { font-weight: bold; color: var(--error); margin-left: 5px; }
+
+        /* Module Injected CSS Placeholders */
+        
+
+
+
+
+
+        @media print {
+            body { background: white !important; }
+            .app-container, .nudge-overlay { display: none !important; }
+            #printReportTemplate { display: block !important; }
+        }
+        #printReportTemplate { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- Top Status Bar (Lives) -->
+        <div class="top-status-bar" id="statusBar">
+            <div class="lives-container" id="livesContainer">
+                <span class="life-heart" id="life_3">❤️</span>
+                <span class="life-heart" id="life_2">❤️</span>
+                <span class="life-heart" id="life_1">❤️</span>
+            </div>
+            <div class="progress-indicator">Módulo <span id="currentMod">0</span> de 4</div>
+        </div>
+
+        <!-- SCREEN 0: Welcome / Team Input -->
+        <div class="screen active" id="screenWelcome">
+            <span class="app-subtitle">Sistemas de Información | Unidad IV: Los Sistemas de Información Gerencial</span>
+            <h1>El Cuadro de Mando de la Distribuidora: Dirigiendo con Datos</h1>
+            <p class="description">Distribuidora Express S.A. está en crisis: ventas sin registrar, compras duplicadas y un Gerente General que no sabe cuál es su producto estrella. Te han contratado como consultor de TI para estructurar su Sistema de Información Gerencial y salvar la empresa antes de que colapse.</p>
+
+            <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+                <strong>Modalidad:</strong> Trabajo en Equipo (El sistema pedirá el nombre de todos los integrantes)
+            </div>
+
+            <div id="teamInputArea">
+                <!-- Injected via JS based on modalidad -->
+            </div>
+
+            <button class="btn" onclick="startSimulation()">Iniciar Misión</button>
+        </div>
+
+        <!-- INJECTED MODULES -->
+        <div class="screen module-screen" id="module_1"><h2>Misión 1: La Pirámide de Información Organizacional</h2><p class="description">Distribuidora Express necesita organizar sus flujos de información. Clasifica cada elemento en el nivel jerárquico correcto. ¡Cuidado! No te dejes llevar por palabras clave, analiza quién consume realmente el dato y para qué.</p>
+        <div style="background:#fffbeb; border:1px solid #fef3c7; border-left:4px solid #d97706; padding:15px; margin-bottom:20px; font-size:14px; border-radius:8px;">
+            <strong style="color:#b45309; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <span>💡</span> Pista del Consultor / Advertencia
+            </strong>
+            <p style="color:#78350f; line-height:1.5; margin:0;">Ojo: No todo lo que tiene nombre de métrica o reporte consolidado es de nivel Estratégico. Si un reporte mide un proceso departamental específico o se hace de forma mensual (como costos o rotación), pregúntate: ¿sirve para definir el rumbo de la empresa a 5 años o solo para que un jefe medio vigile su área?</p>
+        </div>
+        <div id="mod1_container" style="display:flex; gap:20px; margin-bottom:20px;"><div style="flex:1;"><h3>Categorías</h3><div class="cat-drop" onclick="selectCat1('Nivel Operativo')" style="padding:15px; border:2px dashed #cbd5e1; margin-top:10px; border-radius:8px; cursor:pointer; min-height:80px;" id="cat_1_Nivel Operativo"><strong style="color:#64748b; font-size:13px;">Nivel Operativo</strong></div><div class="cat-drop" onclick="selectCat1('Nivel Táctico')" style="padding:15px; border:2px dashed #cbd5e1; margin-top:10px; border-radius:8px; cursor:pointer; min-height:80px;" id="cat_1_Nivel Táctico"><strong style="color:#64748b; font-size:13px;">Nivel Táctico</strong></div><div class="cat-drop" onclick="selectCat1('Nivel Estratégico')" style="padding:15px; border:2px dashed #cbd5e1; margin-top:10px; border-radius:8px; cursor:pointer; min-height:80px;" id="cat_1_Nivel Estratégico"><strong style="color:#64748b; font-size:13px;">Nivel Estratégico</strong></div></div><div style="flex:1;"><h3>Conceptos (Haz clic para seleccionar/devolver)</h3><div id="items_list_1"><div class="item-drag" id="item_1_0" onclick="selectItem1(event, 0)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Lista diaria de facturas pendientes de cobro para el cobrador de ruta</div><div class="item-drag" id="item_1_1" onclick="selectItem1(event, 1)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Indicador de rotación de personal mensual del departamento de TI</div><div class="item-drag" id="item_1_2" onclick="selectItem1(event, 2)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Plan de sucesión directiva y proyección de personal a 5 años de la empresa</div><div class="item-drag" id="item_1_3" onclick="selectItem1(event, 3)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Registro de entrada física de mercancía devuelta por clientes en almacén</div><div class="item-drag" id="item_1_4" onclick="selectItem1(event, 4)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Comparativa mensual del margen de ganancia por línea de producto</div><div class="item-drag" id="item_1_5" onclick="selectItem1(event, 5)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Alianza estratégica comercial y plan para entrar a un nuevo mercado nacional</div></div></div></div><button class="btn" onclick="validarMod1()">Validar Clasificación</button></div>
+<div class="screen module-screen" id="module_2"><h2>Misión 2: El Mito del Computador y el Software ERP</h2><p class="description">El dueño de Distribuidora Express decide comprar una costosa licencia del software ERP SAP/Odoo para solucionar el desorden administrativo de la empresa, pero no define nuevos roles de datos, no modifica el flujo manual de las hojas de trabajo ni entrena al personal en procesos de control. Como consultor de TI, ¿cuál es tu diagnóstico de lo que ocurrirá?</p>
+        <div style="background:#fffbeb; border:1px solid #fef3c7; border-left:4px solid #d97706; padding:15px; margin-bottom:20px; font-size:14px; border-radius:8px;">
+            <strong style="color:#b45309; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <span>💡</span> Pista del Consultor / Advertencia
+            </strong>
+            <p style="color:#78350f; line-height:1.5; margin:0;">Cuidado: Los vendedores de software te dirán que la tecnología resuelve todo. Pero si la estructura organizativa de procesos y la capacitación de las personas están rotas en el caos manual, ¿el software reparará los malos hábitos por arte de magia al digitalizarlos?</p>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;"><button class="btn btn-outline" style="text-align:left;" onclick="checkEscenario2(0)">El software corregirá automáticamente los flujos administrativos gracias a las mejores prácticas de la industria que vienen pre-programadas en su código.</button><button class="btn btn-outline" style="text-align:left;" onclick="checkEscenario2(1)">El desorden administrativo se automatizará: el software procesará los datos más rápido, pero el sistema seguirá roto porque un SIG requiere estructurar procesos y capacitar personas, no solo instalar software.</button><button class="btn btn-outline" style="text-align:left;" onclick="checkEscenario2(2)">El sistema fallará únicamente a nivel operativo debido a la falta de capacidad física de almacenamiento en los servidores locales de la distribuidora.</button><button class="btn btn-outline" style="text-align:left;" onclick="checkEscenario2(3)">La empresa aumentará su rentabilidad de inmediato porque tener los datos digitalizados garantiza la correcta toma de decisiones gerenciales.</button></div></div>
+<div class="screen module-screen" id="module_3"><h2>Misión 3: La Red de Subsistemas: Flujo de Datos Transaccional</h2><p class="description">En la Distribuidora Express, los departamentos no pueden operar como silos y la información debe seguir un flujo seguro. Arrastra y conecta los nodos lógicos para crear el flujo de datos correcto desde la entrada de un pedido hasta el registro contable.</p>
+        <div style="background:#fffbeb; border:1px solid #fef3c7; border-left:4px solid #d97706; padding:15px; margin-bottom:20px; font-size:14px; border-radius:8px;">
+            <strong style="color:#b45309; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <span>💡</span> Pista del Consultor / Advertencia
+            </strong>
+            <p style="color:#78350f; line-height:1.5; margin:0;">Tip del Auditor: El vendedor siempre quiere vender y el almacenero despachar rápido. Si dejas el control de riesgo en sus manos o si despachas antes de facturar, rompes la segregación de funciones. ¿Qué nodo debe autorizar el pase antes de sacar mercancía?</p>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:20px; margin-bottom:20px;"><div style="padding:15px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px;"><h3>Nodos Disponibles (Arrastra hacia abajo)</h3><div id="nodos_pool_3" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; min-height:60px;"><div class="draggable-node" id="nodo_3_n1" draggable="true" ondragstart="dragNodo3(event)" style="padding:10px 15px; background:white; border:2px solid #0284c7; border-radius:8px; cursor:grab; font-weight:600; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">Recibir Pedido (Ventas)</div><div class="draggable-node" id="nodo_3_n2" draggable="true" ondragstart="dragNodo3(event)" style="padding:10px 15px; background:white; border:2px solid #64748b; border-radius:8px; cursor:grab; font-weight:600; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">Despachar Mercancía (Almacén)</div><div class="draggable-node" id="nodo_3_n3" draggable="true" ondragstart="dragNodo3(event)" style="padding:10px 15px; background:white; border:2px solid #f59e0b; border-radius:8px; cursor:grab; font-weight:600; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">Validar Límite de Crédito (Cobranzas)</div><div class="draggable-node" id="nodo_3_n4" draggable="true" ondragstart="dragNodo3(event)" style="padding:10px 15px; background:white; border:2px solid #64748b; border-radius:8px; cursor:grab; font-weight:600; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">Emitir Factura Final (Finanzas)</div><div class="draggable-node" id="nodo_3_n5" draggable="true" ondragstart="dragNodo3(event)" style="padding:10px 15px; background:white; border:2px solid #10b981; border-radius:8px; cursor:grab; font-weight:600; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">Actualizar Libro Mayor (Contabilidad)</div><div class="draggable-node" id="nodo_3_n6" draggable="true" ondragstart="dragNodo3(event)" style="padding:10px 15px; background:white; border:2px solid #f59e0b; border-radius:8px; cursor:grab; font-weight:600; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">Modificar Límite Manualmente (Ventas)</div><div class="draggable-node" id="nodo_3_n7" draggable="true" ondragstart="dragNodo3(event)" style="padding:10px 15px; background:white; border:2px solid #64748b; border-radius:8px; cursor:grab; font-weight:600; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">Despachar Anticipado (Almacén)</div><div class="draggable-node" id="nodo_3_n8" draggable="true" ondragstart="dragNodo3(event)" style="padding:10px 15px; background:white; border:2px solid #0284c7; border-radius:8px; cursor:grab; font-weight:600; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">Aprobar Crédito VIP (Marketing)</div></div></div><div style="padding:20px; background:#f1f5f9; border:2px dashed #94a3b8; border-radius:8px;"><h3>Lienzo de Flujo Lógico</h3><div style="display:flex; align-items:center; flex-wrap:wrap; gap:15px; margin-top:20px;" id="flow_canvas_3"><div class="node-slot" id="slot_3_0" ondrop="dropNodo3(event)" ondragover="allowDrop3(event)" style="width:160px; height:80px; background:#e2e8f0; border:2px dashed #cbd5e1; border-radius:8px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:12px; color:#94a3b8;">Arrastrar aquí</div><div style="font-size:24px; color:#94a3b8;">➔</div><div class="node-slot" id="slot_3_1" ondrop="dropNodo3(event)" ondragover="allowDrop3(event)" style="width:160px; height:80px; background:#e2e8f0; border:2px dashed #cbd5e1; border-radius:8px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:12px; color:#94a3b8;">Arrastrar aquí</div><div style="font-size:24px; color:#94a3b8;">➔</div><div class="node-slot" id="slot_3_2" ondrop="dropNodo3(event)" ondragover="allowDrop3(event)" style="width:160px; height:80px; background:#e2e8f0; border:2px dashed #cbd5e1; border-radius:8px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:12px; color:#94a3b8;">Arrastrar aquí</div><div style="font-size:24px; color:#94a3b8;">➔</div><div class="node-slot" id="slot_3_3" ondrop="dropNodo3(event)" ondragover="allowDrop3(event)" style="width:160px; height:80px; background:#e2e8f0; border:2px dashed #cbd5e1; border-radius:8px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:12px; color:#94a3b8;">Arrastrar aquí</div><div style="font-size:24px; color:#94a3b8;">➔</div><div class="node-slot" id="slot_3_4" ondrop="dropNodo3(event)" ondragover="allowDrop3(event)" style="width:160px; height:80px; background:#e2e8f0; border:2px dashed #cbd5e1; border-radius:8px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:12px; color:#94a3b8;">Arrastrar aquí</div></div></div></div><button class="btn" onclick="validarNodos3()">Validar Flujo</button></div>
+<div class="screen module-screen" id="module_4"><h2>Misión 4: Granularidad: Construyendo el Dashboard del Gerente</h2><p class="description">El desarrollador novato quiere llenarle la pantalla al Gerente General con datos basura en tiempo real. Actúa como el arquitecto de TI: arrastra al lienzo del Dashboard ÚNICAMENTE los 3 widgets estratégicos que le servirán al Gerente para tomar decisiones de alto nivel, y descarta los datos operativos.</p>
+        <div style="background:#fffbeb; border:1px solid #fef3c7; border-left:4px solid #d97706; padding:15px; margin-bottom:20px; font-size:14px; border-radius:8px;">
+            <strong style="color:#b45309; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <span>💡</span> Pista del Consultor / Advertencia
+            </strong>
+            <p style="color:#78350f; line-height:1.5; margin:0;">Advertencia Gerencial: Que un dato esté 'en tiempo real' y sea 'ultra-detallado' no significa que sea útil para la alta gerencia. Si el Gerente General pasa su mañana viendo qué cajero facturó a qué hora exacta, ¿quién está planificando el crecimiento a largo plazo?</p>
+        </div>
+        <div style="display:flex; gap:20px; margin-bottom:20px; flex-wrap:wrap;"><div style="flex:1; min-width:250px; padding:15px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px;"><h3>Widgets (Arrastra)</h3><div id="widgets_pool_4" style="display:flex; flex-direction:column; gap:10px; margin-top:10px; min-height:200px;"><div class="draggable-widget" id="widget_4_w1" draggable="true" ondragstart="dragWidget4(event)" style="padding:15px; background:white; color:#0f172a; border:1px solid #e2e8f0; border-left:4px solid #64748b; border-radius:6px; cursor:grab; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">Tabla de facturas emitidas por cajero (Tiempo Real)</div><div class="draggable-widget" id="widget_4_w2" draggable="true" ondragstart="dragWidget4(event)" style="padding:15px; background:white; color:#0f172a; border:1px solid #e2e8f0; border-left:4px solid #64748b; border-radius:6px; cursor:grab; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">Rentabilidad Neta Mensual Consolidada (%)</div><div class="draggable-widget" id="widget_4_w3" draggable="true" ondragstart="dragWidget4(event)" style="padding:15px; background:white; color:#0f172a; border:1px solid #e2e8f0; border-left:4px solid #64748b; border-radius:6px; cursor:grab; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">Ubicación GPS actual del camión 4 de reparto</div><div class="draggable-widget" id="widget_4_w4" draggable="true" ondragstart="dragWidget4(event)" style="padding:15px; background:white; color:#0f172a; border:1px solid #e2e8f0; border-left:4px solid #64748b; border-radius:6px; cursor:grab; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">Proyección trimestral de crecimiento por línea de producto</div><div class="draggable-widget" id="widget_4_w5" draggable="true" ondragstart="dragWidget4(event)" style="padding:15px; background:white; color:#0f172a; border:1px solid #e2e8f0; border-left:4px solid #64748b; border-radius:6px; cursor:grab; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">Top 5 Clientes en riesgo de impago (Historial 90 días)</div><div class="draggable-widget" id="widget_4_w6" draggable="true" ondragstart="dragWidget4(event)" style="padding:15px; background:white; color:#0f172a; border:1px solid #e2e8f0; border-left:4px solid #64748b; border-radius:6px; cursor:grab; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">Registro de devoluciones del día en puerta de almacén</div></div></div><div style="flex:2; min-width:350px; padding:20px; background:#0f172a; border-radius:12px; color:white; min-height:400px;"><h3 style="color:#38bdf8;">Dashboard Estratégico</h3><p style="color:#94a3b8; font-size:12px;">Arrastra los widgets clave aquí y descarta el resto.</p><div id="dashboard_canvas_4" ondrop="dropWidget4(event)" ondragover="allowDropWidget4(event)" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-top:20px; min-height:300px; padding:10px; border:2px dashed #334155; border-radius:8px;"></div></div></div><button class="btn" onclick="validarDashboard4()">Validar Dashboard</button></div>
+
+
+        <!-- SCREEN RESULTS -->
+        <div class="screen" id="screenResults">
+            <h2>Consola de Diagnóstico Final</h2>
+            <p class="description">Has completado los retos. Revisa tu desempeño y genera el reporte oficial obligatorio.</p>
+            
+            <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 20px;">
+                <h3 style="color: #047857; margin-bottom: 5px;">Puntuación Final</h3>
+                <div style="font-size: 36px; font-weight: 800; color: #10b981;" id="finalScoreVal">0.0</div>
+                <div style="font-size: 12px; color: #047857; text-transform: uppercase;">Sobre 5.0 pts</div>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 30px;">
+                <button class="btn" onclick="downloadPDFDirect()">1. Descargar PDF (Obligatorio)</button>
+                <button class="btn btn-outline" onclick="printNatively()">2. Imprimir / Ver PDF</button>
+            </div>
+            <!-- Botón de reiniciar NO EXISTE (Hardcore mode finality) -->
+        </div>
+
+    </div>
+
+    <!-- NUDGE MODAL -->
+    <div class="nudge-overlay" id="nudgeOverlay">
+        <div class="nudge-card">
+            <div style="font-size: 28px; margin-bottom: 10px;">⚠️</div>
+            <h3 style="margin-bottom: 8px;">Detente y Reflexiona</h3>
+            <div class="nudge-text" id="nudgeText">...</div>
+            <button class="btn" id="btnNudgeClose" disabled onclick="closeNudge()">
+                Reintentar en <span class="countdown-timer" id="nudgeTimer">5</span>s
+            </button>
+        </div>
+    </div>
+
+    <!-- GAME OVER MODAL -->
+    <div class="nudge-overlay" id="gameOverOverlay">
+        <div class="nudge-card">
+            <div style="font-size: 28px; margin-bottom: 10px;">💀</div>
+            <h3 style="margin-bottom: 8px;">Sobrecarga del Sistema</h3>
+            <div class="nudge-text">Has perdido tus 3 intentos en este módulo. El sistema de seguridad ha reiniciado la conexión. Debes comenzar de nuevo.</div>
+            <button class="btn" onclick="location.reload()">Reiniciar Simulación</button>
+        </div>
+    </div>
+
+    <!-- PRINT TEMPLATE -->
+    <div id="printReportTemplate" style="width:100%; max-width:800px; margin:0 auto; padding:20px; font-family: Helvetica, sans-serif;">
+        <div style="border-bottom: 2px solid #2c3e50; padding-bottom: 15px; margin-bottom: 20px;">
+            <h2 style="color: #2c3e50; margin:0;">REPORTE OFICIAL DE EVALUACIÓN</h2>
+            <div style="font-size: 12px; color: #7f8c8d;">Sistemas de Información | Unidad IV: Los Sistemas de Información Gerencial</div>
+        </div>
+        <div style="font-size: 12px; margin-bottom: 20px;">
+            <strong>Integrantes del Equipo:</strong><br>
+            <div id="printNames"></div>
+        </div>
+        <div style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 20px; text-align: center;">
+            <div style="font-weight: bold;">CALIFICACIÓN FINAL</div>
+            <div style="font-size: 32px; color: #27ae60; font-weight: bold;" id="printScore">0.0 / 5.0</div>
+        </div>
+    </div>
+
+    <script>
+        // Core Engine State
+        const isTeamMode = true; // boolean injected by python
+        let teamMembers = [];
+        let lives = 3;
+        let currentScore = 0;
+        let totalModules = 4;
+        let currentModuleIndex = 1;
+        let penaltyPerMistake = 0.25; 
+        let baseScore = 5.0;
+
+        // Statistics and Detailed Evaluation Logging
+        let totalAciertos = 0;
+        let totalDesaciertos = 0;
+        let logDesempeno = []; // [{ modulo: "Misión 1", titulo: "...", detalle: "...", errores: N }]
+
+        function registrarProgresoModulo(tituloModulo, preguntaInstruccion, detalleRespuesta, erroresModulo) {
+            totalAciertos++;
+            logDesempeno.push({
+                mision: 'Misión ' + currentModuleIndex,
+                titulo: tituloModulo,
+                pregunta: preguntaInstruccion || '',
+                detalle: detalleRespuesta,
+                errores: erroresModulo || 0
+            });
+        }
+
+        // Init Team Inputs
+        function initWelcome() {
+            const container = document.getElementById('teamInputArea');
+            if (isTeamMode) {
+                container.innerHTML = `
+                    <label class="input-label">Nombres de los Integrantes del Equipo:</label>
+                    <div class="team-members-list" id="memberList">
+                        <input type="text" class="text-input member-input" placeholder="Integrante 1 (Nombre Completo)">
+                        <input type="text" class="text-input member-input" placeholder="Integrante 2 (Nombre Completo)">
+                    </div>
+                    <button class="btn btn-outline" style="font-size:12px; padding:6px 12px;" onclick="addMember()">+ Añadir Integrante</button>
+                `;
+            } else {
+                container.innerHTML = `
+                    <label class="input-label">Tu Nombre Completo:</label>
+                    <input type="text" class="text-input member-input" id="singleName" placeholder="Escribe tu nombre para comenzar...">
+                `;
+            }
+        }
+
+        function addMember() {
+            const list = document.getElementById('memberList');
+            const input = document.createElement('input');
+            input.type = "text";
+            input.className = "text-input member-input";
+            input.placeholder = "Integrante " + (list.children.length + 1);
+            list.appendChild(input);
+        }
+
+        function startSimulation() {
+            const inputs = document.querySelectorAll('.member-input');
+            teamMembers = Array.from(inputs).map(i => i.value.trim()).filter(v => v !== "");
+            
+            if (teamMembers.length === 0) {
+                alert("Debes ingresar al menos un nombre para comenzar.");
+                return;
+            }
+
+            document.getElementById('screenWelcome').classList.remove('active');
+            document.getElementById('statusBar').style.display = 'flex';
+            showModule(1);
+        }
+
+        function showModule(index) {
+            document.querySelectorAll('.module-screen').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById('module_' + index);
+            if (target) {
+                target.classList.add('active');
+                document.getElementById('currentMod').innerText = index;
+            } else {
+                finishSimulation();
+            }
+        }
+
+        function proceedToNextModule() {
+            currentModuleIndex++;
+            showModule(currentModuleIndex);
+        }
+
+        // Hardcore Engine: Nudges and Lives
+        function triggerError(nudgeMessage) {
+            totalDesaciertos++;
+            baseScore -= penaltyPerMistake;
+            if (baseScore < 0) baseScore = 0;
+            
+            loseLife();
+            if (lives > 0) {
+                showNudge(nudgeMessage);
+            }
+        }
+
+        function loseLife() {
+            const heart = document.getElementById('life_' + lives);
+            if (heart) heart.classList.add('lost');
+            lives--;
+            if (lives === 0) {
+                setTimeout(() => {
+                    document.getElementById('gameOverOverlay').classList.add('active');
+                }, 500);
+            }
+        }
+
+        function showNudge(msg) {
+            document.getElementById('nudgeText').innerText = msg;
+            document.getElementById('nudgeOverlay').classList.add('active');
+            
+            const btn = document.getElementById('btnNudgeClose');
+            // Always rebuild the button HTML to restore the timer span
+            btn.innerHTML = 'Reintentar en <span class="countdown-timer" id="nudgeTimer">5</span>s';
+            btn.disabled = true;
+            let timeLeft = 5;
+            
+            const interval = setInterval(() => {
+                timeLeft--;
+                const timerSpan = document.getElementById('nudgeTimer');
+                if (timerSpan) timerSpan.innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    btn.disabled = false;
+                    btn.innerHTML = "Entendido, Reintentar";
+                }
+            }, 1000);
+        }
+
+        function closeNudge() {
+            document.getElementById('nudgeOverlay').classList.remove('active');
+        }
+
+        function finishSimulation() {
+            document.getElementById('statusBar').style.display = 'none';
+            document.getElementById('screenResults').classList.add('active');
+            document.getElementById('finalScoreVal').innerText = baseScore.toFixed(1);
+            
+            // Build Results Summary HTML on screen
+            let summaryHTML = `
+                <div style="display:flex; justify-content:space-around; background:#f8fafc; padding:15px; border-radius:8px; margin:20px 0; border:1px solid #e2e8f0;">
+                    <div><strong>Aciertos:</strong> <span style="color:#10b981; font-weight:bold;">${totalAciertos}</span></div>
+                    <div><strong>Desaciertos (Errores):</strong> <span style="color:#ef4444; font-weight:bold;">${totalDesaciertos}</span></div>
+                    <div><strong>Vidas Restantes:</strong> <span style="color:#0284c7; font-weight:bold;">${lives}/3</span></div>
+                </div>
+                <h4 style="margin-top:20px; margin-bottom:10px; font-size:14px; text-transform:uppercase; color:#64748b;">Desglose de Ejercicios Desarrollados:</h4>
+                <div style="text-align:left; display:flex; flex-direction:column; gap:10px;">
+            `;
+            
+            logDesempeno.forEach(item => {
+                summaryHTML += `
+                    <div style="background:white; border:1px solid #e2e8f0; border-left:4px solid #10b981; padding:12px; border-radius:6px; font-size:13px;">
+                        <strong style="color:#0f172a;">${item.mision}: ${item.titulo}</strong>
+                        ${item.pregunta ? `<div style="font-size:12px; color:#475569; margin-top:4px; font-style:italic;"><strong>Pregunta/Instrucción:</strong> ${item.pregunta}</div>` : ''}
+                        <div style="color:#0284c7; margin-top:4px; font-weight:600;"><strong>Respuesta Registrada:</strong> ${item.detalle}</div>
+                        <div style="font-size:11px; color:${item.errores > 0 ? '#ef4444' : '#10b981'}; margin-top:4px;">Reintentos / Errores en esta misión: ${item.errores}</div>
+                    </div>
+                `;
+            });
+            summaryHTML += `</div>`;
+            
+            const resultsCard = document.getElementById('screenResults');
+            let logContainer = document.getElementById('onScreenLogContainer');
+            if (!logContainer) {
+                logContainer = document.createElement('div');
+                logContainer.id = 'onScreenLogContainer';
+                resultsCard.insertBefore(logContainer, resultsCard.querySelector('div[style*="display: flex"]'));
+            }
+            logContainer.innerHTML = summaryHTML;
+        }
+
+        // Output generators
+        function downloadPDFDirect() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const now = new Date().toLocaleString();
+            
+            // Header Bar
+            doc.setFillColor(15, 23, 42); // slate-900
+            doc.rect(0, 0, 210, 32, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(13);
+            doc.text("IUTEMBI - COMPROBANTE OFICIAL DE EVALUACIÓN", 14, 13);
+            doc.setFontSize(9);
+            doc.setFont("Helvetica", "normal");
+            doc.text("Sistemas de Información | Unidad IV: Los Sistemas de Información Gerencial", 14, 20);
+            doc.text("Fecha y Hora: " + now, 14, 26);
+
+            // Student/Team Section
+            doc.setTextColor(15, 23, 42);
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(10);
+            doc.text("ESTUDIANTE(S) / INTEGRANTES:", 14, 42);
+            doc.setFont("Helvetica", "normal");
+            let y = 48;
+            teamMembers.forEach(m => {
+                doc.text("• " + m, 18, y);
+                y += 6;
+            });
+
+            // Evaluation Summary Box
+            y += 4;
+            doc.setFillColor(248, 250, 252);
+            doc.setDrawColor(226, 232, 240);
+            doc.roundedRect(14, y, 182, 28, 3, 3, 'FD');
+            
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(9);
+            doc.setTextColor(100, 116, 139);
+            doc.text("PUNTUACIÓN OBTENIDA", 20, y + 8);
+            doc.text("TOTAL ACIERTOS", 85, y + 8);
+            doc.text("TOTAL DESACIERTOS", 135, y + 8);
+
+            doc.setFontSize(16);
+            doc.setFont("Helvetica", "bold");
+            doc.setTextColor(16, 185, 129); // green
+            doc.text(baseScore.toFixed(1) + " / 5.0 pts", 20, y + 20);
+            
+            doc.setTextColor(15, 23, 42);
+            doc.text(totalAciertos.toString() + " misiones", 85, y + 20);
+            
+            doc.setTextColor(239, 68, 68); // red
+            doc.text(totalDesaciertos.toString() + " errores", 135, y + 20);
+
+            // Breakdown Section Title
+            y += 36;
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(10);
+            doc.setTextColor(15, 23, 42);
+            doc.text("DETALLE DE EJERCICIOS Y RESPUESTAS DESARROLLADAS:", 14, y);
+            y += 8;
+
+            // Loop through logged modules - render each as a proper contained card
+            logDesempeno.forEach((item) => {
+                let tituloText = `${item.mision}: ${item.titulo}`;
+                let estadoText = `Estado: Completado | Errores en esta misión: ${item.errores}`;
+                
+                // Max text width: card is 182mm starting at x=14 (ends at 196).
+                // Text starts at x=18, so max = 196 - 18 - 4(padding) = 174mm
+                // Use 155mm to be very safe
+                const maxW = 155;
+                
+                // Set correct fonts BEFORE measuring
+                doc.setFont("Helvetica", "italic");
+                doc.setFontSize(7.5);
+                let preguntaLines = item.pregunta ? doc.splitTextToSize("Instrucción: " + item.pregunta, maxW) : [];
+                
+                doc.setFont("Helvetica", "normal");
+                doc.setFontSize(7.5);
+                let respuestaLines = doc.splitTextToSize("Respuesta: " + item.detalle, maxW);
+                
+                // Calculate total card height
+                const pad = 5;  // top/bottom padding
+                const lineH_title = 4;
+                const lineH_small = 3.2;
+                const sectionGap = 3;
+                
+                let contentH = lineH_title; // title line
+                if (preguntaLines.length > 0) contentH += sectionGap + (preguntaLines.length * lineH_small);
+                contentH += sectionGap + (respuestaLines.length * lineH_small);
+                contentH += sectionGap + lineH_small; // status line
+                
+                let cardHeight = contentH + (pad * 2);
+                
+                if (y + cardHeight > 270) {
+                    doc.addPage();
+                    y = 20;
+                }
+                
+                // Draw card background
+                doc.setFillColor(255, 255, 255);
+                doc.setDrawColor(226, 232, 240);
+                doc.roundedRect(14, y, 182, cardHeight, 2, 2, 'FD');
+                
+                let curY = y + pad + lineH_title;
+                
+                // Title
+                doc.setFont("Helvetica", "bold");
+                doc.setFontSize(9);
+                doc.setTextColor(2, 132, 199);
+                doc.text(tituloText, 18, curY);
+                curY += sectionGap;
+                
+                // Question / Instruction
+                if (preguntaLines.length > 0) {
+                    doc.setFont("Helvetica", "italic");
+                    doc.setFontSize(7.5);
+                    doc.setTextColor(100, 116, 139);
+                    preguntaLines.forEach(line => {
+                        curY += lineH_small;
+                        doc.text(line, 18, curY);
+                    });
+                    curY += sectionGap;
+                }
+                
+                // Answer (use normal weight, not bold, to avoid wide glyphs)
+                doc.setFont("Helvetica", "normal");
+                doc.setFontSize(7.5);
+                doc.setTextColor(15, 23, 42);
+                respuestaLines.forEach(line => {
+                    curY += lineH_small;
+                    doc.text(line, 18, curY);
+                });
+                curY += sectionGap;
+                
+                // Errors/Status
+                doc.setFont("Helvetica", "normal");
+                doc.setFontSize(7);
+                doc.setTextColor(item.errores > 0 ? 239 : 16, item.errores > 0 ? 68 : 185, item.errores > 0 ? 68 : 129);
+                curY += lineH_small;
+                doc.text(estadoText, 18, curY);
+                
+                y += cardHeight + 4;
+            });
+
+            // Footer Code
+            doc.setFontSize(7.5);
+            doc.setTextColor(148, 163, 184);
+            const hash = "IUTEMBI-EVAL-" + Math.random().toString(36).substring(2, 9).toUpperCase();
+            doc.text(`Código Único de Verificación: ${hash} | Documento Oficial de Evaluación`, 14, 287);
+
+            // Dynamic Filename: actividad_unidad_{NRO}_{NOMBRES}.pdf
+            let nombresClean = teamMembers.join("_y_").replace(/[^a-zA-Z0-9_]/g, "_").substring(0, 45);
+            let unidadNum = "4";
+            let filename = `actividad_unidad_${unidadNum}_${nombresClean}.pdf`;
+
+            // Save PDF Blob
+            const blob = doc.output('blob');
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => { document.body.removeChild(link); }, 100);
+        }
+
+        let data_prefix = "sabado4_unidad4";
+
+        function printNatively() {
+            window.print();
+        }
+
+        // Initialize
+        initWelcome();
+
+        // INJECTED MODULES JS
+        
+        let selectedItem1 = null;
+        let matches1 = {};
+        let erroresModulo1 = 0;
+        const itemTexts1 = ["Lista diaria de facturas pendientes de cobro para el cobrador de ruta", "Indicador de rotaci\u00f3n de personal mensual del departamento de TI", "Plan de sucesi\u00f3n directiva y proyecci\u00f3n de personal a 5 a\u00f1os de la empresa", "Registro de entrada f\u00edsica de mercanc\u00eda devuelta por clientes en almac\u00e9n", "Comparativa mensual del margen de ganancia por l\u00ednea de producto", "Alianza estrat\u00e9gica comercial y plan para entrar a un nuevo mercado nacional"];
+        const correctMatches1 = {"0": "Nivel Operativo", "1": "Nivel T\u00e1ctico", "2": "Nivel Estrat\u00e9gico", "3": "Nivel Operativo", "4": "Nivel T\u00e1ctico", "5": "Nivel Estrat\u00e9gico"};
+        
+        function selectItem1(evt, id) {
+            if (evt) evt.stopPropagation();
+            const pool = document.getElementById('items_list_1');
+            const el = document.getElementById('item_1_' + id);
+            
+            if (el.parentElement.id !== 'items_list_1') {
+                pool.appendChild(el);
+                el.style.borderColor = '#e2e8f0';
+                el.style.background = 'white';
+                delete matches1[id];
+                selectedItem1 = null;
+                return;
+            }
+            
+            document.querySelectorAll('#items_list_1 .item-drag').forEach(e => {
+                if (e.parentElement.id === 'items_list_1') e.style.borderColor = '#e2e8f0';
+            });
+            el.style.borderColor = '#0284c7';
+            selectedItem1 = id;
+        }
+
+        function selectCat1(cat) {
+            if (selectedItem1 !== null) {
+                let el = document.getElementById('item_1_' + selectedItem1);
+                el.style.borderColor = '#0284c7';
+                el.style.background = '#f0f9ff';
+                document.getElementById('cat_1_' + cat).appendChild(el);
+                matches1[selectedItem1] = cat;
+                selectedItem1 = null;
+            }
+        }
+
+        function validarMod1() {
+            if (Object.keys(matches1).length < 6) {
+                alert('Asigna todos los conceptos primero antes de validar.'); 
+                return;
+            }
+            let errores = 0;
+            const pool = document.getElementById('items_list_' + 1);
+            
+            for (let key in matches1) {
+                let el = document.getElementById('item_' + 1 + '_' + key);
+                if (matches1[key] !== correctMatches1[key]) {
+                    errores++;
+                    pool.appendChild(el);
+                    el.style.borderColor = '#ef4444';
+                    el.style.background = '#fef2f2';
+                    delete matches1[key];
+                } else {
+                    el.style.borderColor = '#10b981';
+                    el.style.background = '#ecfdf5';
+                }
+            }
+            
+            if (errores > 0) {
+                erroresModulo1 += errores;
+                triggerError("¡Caíste en la trampa! Un KPI operativo o un reporte departamental mensual no pertenece al nivel Estratégico. Recuerda: el nivel Estratégico solo consume información altamente consolidada y proyecciones a largo plazo para toda la organización. El nivel Táctico controla y compara procesos.");
+            } else {
+                let resumen = Object.keys(matches1).map(k => '• ' + itemTexts1[k] + ' => ' + matches1[k]).join('\n');
+                registrarProgresoModulo("La Pirámide de Información Organizacional", "Distribuidora Express necesita organizar sus flujos de información. Clasifica cada elemento en el nivel jerárquico correcto. ¡Cuidado! No te dejes llevar por palabras clave, analiza quién consume realmente el dato y para qué.", resumen, erroresModulo1);
+                proceedToNextModule();
+            }
+        }
+        
+
+        const escenarioCorrecto2 = 1;
+        const opcionesTexts2 = ["El software corregir\u00e1 autom\u00e1ticamente los flujos administrativos gracias a las mejores pr\u00e1cticas de la industria que vienen pre-programadas en su c\u00f3digo.", "El desorden administrativo se automatizar\u00e1: el software procesar\u00e1 los datos m\u00e1s r\u00e1pido, pero el sistema seguir\u00e1 roto porque un SIG requiere estructurar procesos y capacitar personas, no solo instalar software.", "El sistema fallar\u00e1 \u00fanicamente a nivel operativo debido a la falta de capacidad f\u00edsica de almacenamiento en los servidores locales de la distribuidora.", "La empresa aumentar\u00e1 su rentabilidad de inmediato porque tener los datos digitalizados garantiza la correcta toma de decisiones gerenciales."];
+        let erroresModulo2 = 0;
+        
+        function checkEscenario2(idx) {
+            if (idx === escenarioCorrecto2) {
+                registrarProgresoModulo("El Mito del Computador y el Software ERP", "El dueño de Distribuidora Express decide comprar una costosa licencia del software ERP SAP/Odoo para solucionar el desorden administrativo de la empresa, pero no define nuevos roles de datos, no modifica el flujo manual de las hojas de trabajo ni entrena al personal en procesos de control. Como consultor de TI, ¿cuál es tu diagnóstico de lo que ocurrirá?", opcionesTexts2[idx], erroresModulo2);
+                proceedToNextModule();
+            } else {
+                erroresModulo2++;
+                triggerError("¡Cuidado! Esa es la típica trampa comercial en la que caen muchos gerentes. El software por sí solo no arregla procesos rotos. Como dice la máxima de TI: 'Si automatizas un proceso caótico, lo único que obtienes es un caos automatizado'. Vuelve a analizar.");
+            }
+        }
+        
+
+        const correctFlow3 = ["n1", "n3", "n2", "n4", "n5"];
+        const nodeTexts3 = {"n1": "Recibir Pedido (Ventas)", "n2": "Despachar Mercanc\u00eda (Almac\u00e9n)", "n3": "Validar L\u00edmite de Cr\u00e9dito (Cobranzas)", "n4": "Emitir Factura Final (Finanzas)", "n5": "Actualizar Libro Mayor (Contabilidad)", "n6": "Modificar L\u00edmite Manualmente (Ventas)", "n7": "Despachar Anticipado (Almac\u00e9n)", "n8": "Aprobar Cr\u00e9dito VIP (Marketing)"};
+        let erroresModulo3 = 0;
+        
+        function allowDrop3(ev) {
+            ev.preventDefault();
+        }
+        
+        function dragNodo3(ev) {
+            ev.dataTransfer.setData("text", ev.target.id);
+        }
+        
+        function dropNodo3(ev) {
+            ev.preventDefault();
+            var data = ev.dataTransfer.getData("text");
+            var draggedEl = document.getElementById(data);
+            
+            // If dropping on a slot
+            if (ev.target.classList.contains('node-slot')) {
+                // If slot already has a child, move child back to pool
+                if (ev.target.children.length > 0) {
+                    document.getElementById('nodos_pool_3').appendChild(ev.target.children[0]);
+                }
+                ev.target.innerHTML = '';
+                ev.target.appendChild(draggedEl);
+            } 
+            // If dropping on another node inside a slot
+            else if (ev.target.classList.contains('draggable-node') && ev.target.parentElement.classList.contains('node-slot')) {
+                let slot = ev.target.parentElement;
+                document.getElementById('nodos_pool_3').appendChild(ev.target);
+                slot.appendChild(draggedEl);
+            }
+            // If dropping back to pool
+            else if (ev.target.id === 'nodos_pool_3') {
+                ev.target.appendChild(draggedEl);
+            }
+        }
+        
+        // Make pool droppable too
+        document.getElementById('nodos_pool_3').ondrop = dropNodo3;
+        document.getElementById('nodos_pool_3').ondragover = allowDrop3;
+
+        function validarNodos3() {
+            let slots = document.querySelectorAll('#flow_canvas_3 .node-slot');
+            let currentFlow = [];
+            let allFilled = true;
+            
+            slots.forEach(slot => {
+                if (slot.children.length === 0) {
+                    allFilled = false;
+                } else {
+                    let fullId = slot.children[0].id;
+                    let parts = fullId.split('_');
+                    let actualId = parts.slice(2).join('_');
+                    currentFlow.push(actualId);
+                }
+            });
+            
+            if (!allFilled) {
+                alert('Debes completar todas las ranuras del flujo antes de validar.');
+                return;
+            }
+            
+            let isCorrect = true;
+            for(let i=0; i<correctFlow3.length; i++) {
+                if(currentFlow[i] !== correctFlow3[i]) isCorrect = false;
+            }
+            
+            if (isCorrect) {
+                let resumen = currentFlow.map(id => nodeTexts3[id]).join(' ➔ ');
+                registrarProgresoModulo("La Red de Subsistemas: Flujo de Datos Transaccional", "En la Distribuidora Express, los departamentos no pueden operar como silos y la información debe seguir un flujo seguro. Arrastra y conecta los nodos lógicos para crear el flujo de datos correcto desde la entrada de un pedido hasta el registro contable.", resumen, erroresModulo3);
+                proceedToNextModule();
+            } else {
+                erroresModulo3++;
+                triggerError("¡Error! Estás rompiendo el flujo seguro. No puedes despachar mercancía sin que antes el nodo de 'Crédito y Cobranzas' valide el saldo del cliente, y no puedes registrar contabilidad sin que exista una factura emitida.");
+            }
+        }
+        
+
+        const correctWidgets4 = ["w2", "w4", "w5"];
+        const widgetTexts4 = {"w1": "Tabla de facturas emitidas por cajero (Tiempo Real)", "w2": "Rentabilidad Neta Mensual Consolidada (%)", "w3": "Ubicaci\u00f3n GPS actual del cami\u00f3n 4 de reparto", "w4": "Proyecci\u00f3n trimestral de crecimiento por l\u00ednea de producto", "w5": "Top 5 Clientes en riesgo de impago (Historial 90 d\u00edas)", "w6": "Registro de devoluciones del d\u00eda en puerta de almac\u00e9n"};
+        let erroresModulo4 = 0;
+        
+        function allowDropWidget4(ev) {
+            ev.preventDefault();
+        }
+        
+        function dragWidget4(ev) {
+            ev.dataTransfer.setData("text", ev.target.id);
+        }
+        
+        function dropWidget4(ev) {
+            ev.preventDefault();
+            var data = ev.dataTransfer.getData("text");
+            var draggedEl = document.getElementById(data);
+            
+            if (ev.target.id === 'dashboard_canvas_4' || ev.target.id === 'widgets_pool_4') {
+                ev.target.appendChild(draggedEl);
+            } else if (ev.target.classList.contains('draggable-widget')) {
+                ev.target.parentElement.appendChild(draggedEl);
+            }
+        }
+        
+        document.getElementById('widgets_pool_4').ondrop = dropWidget4;
+        document.getElementById('widgets_pool_4').ondragover = allowDropWidget4;
+
+        function validarDashboard4() {
+            let canvas = document.getElementById('dashboard_canvas_4');
+            let placedWidgets = [];
+            
+            for (let i=0; i<canvas.children.length; i++) {
+                let fullId = canvas.children[i].id;
+                let parts = fullId.split('_');
+                let actualId = parts.slice(2).join('_');
+                placedWidgets.push(actualId);
+            }
+            
+            if (placedWidgets.length === 0) {
+                alert('El dashboard está vacío. Arrastra al menos un widget.');
+                return;
+            }
+            
+            let isCorrect = placedWidgets.length === correctWidgets4.length && 
+                            placedWidgets.every(w => correctWidgets4.includes(w));
+                            
+            if (isCorrect) {
+                let resumen = "Widgets seleccionados: \n" + placedWidgets.map(id => "• " + widgetTexts4[id]).join('\n');
+                registrarProgresoModulo("Granularidad: Construyendo el Dashboard del Gerente", "El desarrollador novato quiere llenarle la pantalla al Gerente General con datos basura en tiempo real. Actúa como el arquitecto de TI: arrastra al lienzo del Dashboard ÚNICAMENTE los 3 widgets estratégicos que le servirán al Gerente para tomar decisiones de alto nivel, y descarta los datos operativos.", resumen, erroresModulo4);
+                proceedToNextModule();
+            } else {
+                erroresModulo4++;
+                triggerError("¡Cuidado con la concha de mango! Pusiste datos transaccionales de nivel operativo en un panel estratégico. El Gerente General necesita ver el bosque (consolidaciones, proyecciones), no las hojas de los árboles (facturas individuales o ubicaciones GPS al segundo).");
+            }
+        }
+        
+
+    </script>
+</body>
+</html>
