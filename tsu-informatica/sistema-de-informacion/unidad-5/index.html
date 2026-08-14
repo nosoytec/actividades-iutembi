@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistemas de Información | Unidad V: La Toma de Decisiones</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --border-color: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --primary: #0284c7;
+            --primary-hover: #0369a1;
+            --success: #10b981;
+            --error: #ef4444;
+            --font-family: 'Outfit', sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-main);
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 24px 24px;
+            color: var(--text-main);
+            font-family: var(--font-family);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 850px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            padding: 40px;
+            position: relative;
+        }
+
+        /* Top Bar: Jokers and Progress */
+        .top-status-bar {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* Joker Panel */
+        .joker-panel {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .joker-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1.5px solid var(--border-color);
+            background: #fff;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: var(--font-family);
+            color: var(--text-main);
+        }
+        .joker-btn:hover:not(:disabled) {
+            border-color: var(--primary);
+            background: rgba(2,132,199,0.05);
+        }
+        .joker-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+        .joker-btn.used {
+            opacity: 0.35;
+            text-decoration: line-through;
+            pointer-events: none;
+        }
+
+        .progress-indicator {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        /* Screens */
+        .screen { display: none; opacity: 0; transform: translateY(8px); transition: all 0.3s; }
+        .screen.active { display: block; opacity: 1; transform: translateY(0); }
+
+        /* Typography */
+        h1 { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+        .app-subtitle { font-size: 12px; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 20px; display: block; }
+        h2 { font-size: 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+        h2::before { content: ''; width: 4px; height: 16px; background-color: var(--primary); border-radius: 2px; }
+        p.description { font-size: 14.5px; color: var(--text-muted); line-height: 1.5; margin-bottom: 24px; }
+
+        /* Form & Buttons */
+        .input-group { margin-bottom: 15px; }
+        .text-input { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-family: var(--font-family); }
+        .btn { padding: 12px 24px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: var(--font-family); }
+        .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+        .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); }
+        
+        .team-members-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        
+        .btn-outline.selected {
+            background-color: var(--primary) !important;
+            color: white !important;
+            border-color: var(--primary) !important;
+        }
+
+        /* Nudge Modal */
+        .nudge-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.4); backdrop-filter: blur(2px); z-index: 100; align-items: center; justify-content: center; }
+        .nudge-overlay.active { display: flex; }
+        .nudge-card { background: white; padding: 25px; border-radius: 12px; width: 100%; max-width: 460px; text-align: center; }
+        .nudge-text { background: #f8fafc; padding: 15px; border-left: 3px solid var(--error); margin: 15px 0; font-size: 14px; text-align: left; }
+
+        /* Joker Reveal Modal */
+        .joker-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.5); backdrop-filter: blur(3px); z-index: 110; align-items: center; justify-content: center; }
+        .joker-overlay.active { display: flex; }
+        .joker-reveal-card { background: white; padding: 28px; border-radius: 14px; width: 100%; max-width: 480px; text-align: center; border-top: 4px solid var(--primary); }
+        .joker-reveal-content { background: #f0f9ff; padding: 16px; border-left: 3px solid var(--primary); margin: 14px 0; font-size: 14px; text-align: left; line-height: 1.6; border-radius: 0 8px 8px 0; }
+
+        /* Explorer Mode Banner */
+        .explorer-banner {
+            display: none;
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border: 1px solid #f59e0b;
+            border-radius: 10px;
+            padding: 12px 18px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #92400e;
+            align-items: center;
+            gap: 10px;
+        }
+        .explorer-banner.visible { display: flex; }
+
+        /* Explorer nav buttons */
+        .explorer-nav { display: none; gap: 10px; margin-top: 20px; }
+        .explorer-nav.visible { display: flex; }
+
+        /* Activity type badges */
+        .activity-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+        }
+        .badge-seleccion   { background: #dbeafe; color: #1d4ed8; }
+        .badge-vf          { background: #dcfce7; color: #166534; }
+        .badge-clasificar  { background: #ffedd5; color: #c2410c; }
+        .badge-flujo       { background: #ede9fe; color: #6d28d9; }
+        .badge-dashboard   { background: #f1f5f9; color: #334155; }
+        .badge-emparejar   { background: #fef9c3; color: #854d0e; }
+        .badge-balanza     { background: #fee2e2; color: #b91c1c; }
+        .badge-mapa        { background: #cffafe; color: #0e7490; }
+
+        /* Feedback panel post-validation */
+        .feedback-panel {
+            display: none;
+            padding: 16px 20px;
+            border-radius: 10px;
+            margin: 16px 0;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .feedback-panel.correct { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+        .feedback-panel.incorrect { background: #fef2f2; border-left: 4px solid #ef4444; color: #991b1b; }
+
+        /* Module Injected CSS */
+        
+
+
+
+
+
+        @media (max-width: 600px) {
+            .app-container { padding: 20px 16px; }
+            .joker-btn span.joker-label { display: none; }
+        }
+
+        @media print {
+            body { background: white !important; }
+            .app-container, .nudge-overlay, .joker-overlay { display: none !important; }
+            #printReportTemplate { display: block !important; }
+        }
+        #printReportTemplate { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- Top Status Bar (Jokers + Progress) -->
+        <div class="top-status-bar" id="statusBar">
+            <div class="joker-panel">
+                <span style="font-size:12px; font-weight:700; color:var(--text-muted); margin-right:4px;">COMODINES:</span>
+                <button class="joker-btn" id="jokerConsulta" onclick="usarComodin('consulta')">
+                    🧠 <span class="joker-label">Consulta</span>
+                </button>
+                <button class="joker-btn" id="jokerVoto" onclick="usarComodin('voto')">
+                    👥 <span class="joker-label">Voto</span>
+                </button>
+                <button class="joker-btn" id="jokerSegunda" onclick="usarComodin('segunda')">
+                    🔄 <span class="joker-label">2da oport.</span>
+                </button>
+            </div>
+            <div class="progress-indicator">Módulo <span id="currentMod">0</span> de 4</div>
+        </div>
+
+        <!-- SCREEN 0: Welcome / Team Input -->
+        <div class="screen active" id="screenWelcome">
+            <span class="app-subtitle">Sistemas de Información | Unidad V: La Toma de Decisiones</span>
+            <h1>El Gabinete de Crisis: Decisiones Bajo Presión en el Servidor Principal</h1>
+            <p class="description">El servidor principal de la distribuidora ha fallado a mitad de una auditoría financiera. Los sistemas de facturación física están paralizados y la gerencia de TI debe decidir de inmediato si restaurar un respaldo de hace 24 horas (perdiendo datos transaccionales recientes), migrar temporalmente a un servidor en la nube de alto costo, o intentar una reparación manual en caliente que podría corromper la base de datos de forma permanente. ¡La junta directiva espera tu diagnóstico y plan de acción ahora mismo!</p>
+
+            <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+                <strong>Modalidad:</strong> Trabajo en Equipo (El sistema pedirá el nombre de todos los integrantes)
+            </div>
+
+            <div id="teamInputArea">
+                <!-- Injected via JS based on modalidad -->
+            </div>
+
+            <!-- Explorer Mode Banner -->
+            <div class="explorer-banner" id="explorerBanner">
+                <span>👁️</span>
+                <span>MODO LECTURA — Navega libremente entre los módulos. Cuando estén listos, regístrate para responder.</span>
+            </div>
+
+            <button class="btn" id="btnIniciar" onclick="startSimulation()">Iniciar Misión 🚀</button>
+            <button class="btn btn-outline" id="btnExplorar" onclick="activarModoExplorador()" style="margin-left:10px;">👁️ Ver módulos primero</button>
+        </div>
+
+        <!-- INJECTED MODULES -->
+        <div class="screen module-screen" id="module_1"><span class="activity-badge badge-clasificar">🗂️ Clasificación</span><h2>Misión 1: Matriz Jerárquica de Decisiones</h2><p class="description">Distribuye cada decisión del área de tecnología y negocios en el nivel jerárquico correspondiente de la organización. Recuerda que no depende de la urgencia, sino del alcance, impacto temporal y grado de estructuración de la decisión.</p>
+        <div style="background:#fffbeb; border:1px solid #fef3c7; border-left:4px solid #d97706; padding:15px; margin-bottom:20px; font-size:14px; border-radius:8px;">
+            <strong style="color:#b45309; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <span>💡</span> Pista del Consultor / Advertencia
+            </strong>
+            <p style="color:#78350f; line-height:1.5; margin:0;">Ojo: Decidir restaurar una base de datos caída a mitad del día es crítico, pero es una decisión operativa/táctica porque sigue un protocolo técnico establecido. En cambio, decidir si migrar toda la infraestructura de servidores locales de la empresa a Amazon Web Services (AWS) es estratégico porque define el presupuesto de TI y la arquitectura tecnológica de toda la organización a largo plazo.</p>
+        </div>
+        <div id="mod1_container" style="display:flex; gap:20px; margin-bottom:20px;"><div style="flex:1;"><h3>Categorías</h3><div class="cat-drop" onclick="selectCat1('Nivel Operativo')" style="padding:15px; border:2px dashed #cbd5e1; margin-top:10px; border-radius:8px; cursor:pointer; min-height:80px;" id="cat_1_Nivel Operativo"><strong style="color:#64748b; font-size:13px;">Nivel Operativo</strong></div><div class="cat-drop" onclick="selectCat1('Nivel Táctico')" style="padding:15px; border:2px dashed #cbd5e1; margin-top:10px; border-radius:8px; cursor:pointer; min-height:80px;" id="cat_1_Nivel Táctico"><strong style="color:#64748b; font-size:13px;">Nivel Táctico</strong></div><div class="cat-drop" onclick="selectCat1('Nivel Estratégico')" style="padding:15px; border:2px dashed #cbd5e1; margin-top:10px; border-radius:8px; cursor:pointer; min-height:80px;" id="cat_1_Nivel Estratégico"><strong style="color:#64748b; font-size:13px;">Nivel Estratégico</strong></div></div><div style="flex:1;"><h3>Conceptos (Haz clic para seleccionar/devolver)</h3><div id="items_list_1"><div class="item-drag" id="item_1_0" onclick="selectItem1(event, 0)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Autorizar el reembolso inmediato de una factura duplicada de un cliente en caja</div><div class="item-drag" id="item_1_1" onclick="selectItem1(event, 1)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Definir las políticas de ciberseguridad corporativas a 3 años y contratar un seguro de datos</div><div class="item-drag" id="item_1_2" onclick="selectItem1(event, 2)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Decidir cuál de los dos proveedores de internet contratar para el balanceo de carga del servidor</div><div class="item-drag" id="item_1_3" onclick="selectItem1(event, 3)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Cambiar el proveedor del ERP principal de la corporación para los próximos 5 años</div><div class="item-drag" id="item_1_4" onclick="selectItem1(event, 4)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Suspender temporalmente las ventas de la tarde debido a un retraso físico en el inventario</div><div class="item-drag" id="item_1_5" onclick="selectItem1(event, 5)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Bloquear temporalmente el acceso de un usuario específico al sistema por sospecha de hackeo</div></div></div></div><button class="btn" onclick="validarMod1()">Validar Clasificación</button></div>
+<div class="screen module-screen" id="module_2"><span class="activity-badge badge-seleccion">🔘 Selección simple</span><h2>Misión 2: Gabinete de Crisis: El Servidor Principal Colapsado</h2><p class="description">El servidor principal de la distribuidora ha fallado. La empresa pierde $500 por hora de inactividad. La directiva te pide una solución inmediata. Evaluando las etapas del proceso decisorio y el costo de oportunidad, ¿cuál de las siguientes opciones es la técnicamente más adecuada y profesional?</p>
+        <div style="background:#fffbeb; border:1px solid #fef3c7; border-left:4px solid #d97706; padding:15px; margin-bottom:20px; font-size:14px; border-radius:8px;">
+            <strong style="color:#b45309; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <span>💡</span> Pista del Consultor / Advertencia
+            </strong>
+            <p style="color:#78350f; line-height:1.5; margin:0;">Analiza el dilema: La opción barata a corto plazo puede costar miles de dólares si causa pérdida de datos transaccionales recientes. La opción cara en la nube te da continuidad de inmediato. Y la opción de reparar en caliente sin respaldo es un suicidio técnico.</p>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;" id="opts_2"><button class="btn btn-outline" style="text-align:left;" id="opt_2_0" onclick="selectOpt2(0)">Intentar reparar la base de datos directamente en el servidor dañado sin hacer un respaldo previo para ahorrar tiempo y reanudar las ventas en 15 minutos.</button><button class="btn btn-outline" style="text-align:left;" id="opt_2_1" onclick="selectOpt2(1)">Migrar de inmediato los servicios esenciales a una instancia de contingencia preconfigurada en la nube, asumiendo un costo operativo temporal pero asegurando la continuidad del negocio y la integridad de los datos transaccionales.</button><button class="btn btn-outline" style="text-align:left;" id="opt_2_2" onclick="selectOpt2(2)">Apagar los sistemas de información por completo y esperar a que el proveedor de hardware responda a la garantía física de 48 horas para no gastar presupuesto de la empresa.</button><button class="btn btn-outline" style="text-align:left;" id="opt_2_3" onclick="selectOpt2(3)">Delegar la decisión al cajero de turno para que intente solucionar el error de red reiniciando manualmente el enrutador central.</button></div><div class="feedback-panel" id="fb_2"></div><button class="btn" id="btnConfirm2" onclick="confirmarOpt2()" disabled>Confirmar respuesta</button><button class="btn" id="btnNext2" onclick="proceedToNextModule()" style="display:none; margin-left:10px;">Siguiente misión →</button></div>
+<div class="screen module-screen" id="module_3"><span class="activity-badge badge-flujo">🔗 Ordenar flujo</span><h2>Misión 3: El Algoritmo Decisorio: Fases del Proceso</h2><p class="description">Arrastra y conecta los nodos lógicos en orden cronológico secuencial para estructurar el Proceso Decisorio de TI frente a un problema de rendimiento de red.</p>
+        <div style="background:#fffbeb; border:1px solid #fef3c7; border-left:4px solid #d97706; padding:15px; margin-bottom:20px; font-size:14px; border-radius:8px;">
+            <strong style="color:#b45309; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <span>💡</span> Pista del Consultor / Advertencia
+            </strong>
+            <p style="color:#78350f; line-height:1.5; margin:0;">Tip del Auditor de TI: No puedes evaluar alternativas si no has analizado y definido primero el objetivo del problema. Y no tiene sentido escoger una opción si no vas a implementarla y evaluar los resultados (retroalimentación) a través de métricas claras.</p>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:20px; margin-bottom:20px;"><div style="padding:15px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px;"><h3>Nodos Disponibles</h3><p style="font-size:12px; color:#64748b; margin:6px 0 10px;">💡 Toca un nodo para seleccionarlo, luego toca la ranura donde quieres colocarlo.</p><div id="nodos_pool_3" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; min-height:60px;"><div class="tap-node" id="nodo_3_n1" data-nodeid="n1" onclick="tapNodo3(this)" style="padding:10px 15px; background:white; border:2px solid #0284c7; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05); user-select:none;">Detectar lentitud en el sistema de facturación (Percepción)</div><div class="tap-node" id="nodo_3_n2" data-nodeid="n2" onclick="tapNodo3(this)" style="padding:10px 15px; background:white; border:2px solid #64748b; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05); user-select:none;">Definir que la meta es reducir el tiempo de respuesta a menos de 2 segundos</div><div class="tap-node" id="nodo_3_n3" data-nodeid="n3" onclick="tapNodo3(this)" style="padding:10px 15px; background:white; border:2px solid #64748b; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05); user-select:none;">Identificar 3 opciones: ampliar ancho de banda, purgar logs o actualizar hardware</div><div class="tap-node" id="nodo_3_n4" data-nodeid="n4" onclick="tapNodo3(this)" style="padding:10px 15px; background:white; border:2px solid #f59e0b; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05); user-select:none;">Calcular costos y tiempos de implementación para cada una de las 3 opciones</div><div class="tap-node" id="nodo_3_n5" data-nodeid="n5" onclick="tapNodo3(this)" style="padding:10px 15px; background:white; border:2px solid #64748b; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05); user-select:none;">Seleccionar la opción de purgar logs y contratar 10MB extras de ancho de banda</div><div class="tap-node" id="nodo_3_n6" data-nodeid="n6" onclick="tapNodo3(this)" style="padding:10px 15px; background:white; border:2px solid #10b981; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05); user-select:none;">Monitorear el rendimiento una semana después de la solución (Evaluación)</div><div class="tap-node" id="nodo_3_n7" data-nodeid="n7" onclick="tapNodo3(this)" style="padding:10px 15px; background:white; border:2px solid #64748b; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05); user-select:none;">Instalar un servidor de juegos en la red de la oficina sin reportar al jefe</div><div class="tap-node" id="nodo_3_n8" data-nodeid="n8" onclick="tapNodo3(this)" style="padding:10px 15px; background:white; border:2px solid #f59e0b; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05); user-select:none;">Reclamar al proveedor sin tener claras las métricas del problema</div></div></div><div style="padding:20px; background:#f1f5f9; border:2px dashed #94a3b8; border-radius:8px;"><h3>Lienzo de Flujo Lógico</h3><div style="display:flex; align-items:center; flex-wrap:wrap; gap:15px; margin-top:20px;" id="flow_canvas_3"><div class="node-slot" id="slot_3_0" onclick="tapSlot3(this)" style="width:160px; height:80px; background:#e2e8f0; border:2px dashed #cbd5e1; border-radius:8px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:12px; color:#94a3b8; cursor:pointer; user-select:none;">Toca para colocar</div><div style="font-size:24px; color:#94a3b8;">➤</div><div class="node-slot" id="slot_3_1" onclick="tapSlot3(this)" style="width:160px; height:80px; background:#e2e8f0; border:2px dashed #cbd5e1; border-radius:8px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:12px; color:#94a3b8; cursor:pointer; user-select:none;">Toca para colocar</div><div style="font-size:24px; color:#94a3b8;">➤</div><div class="node-slot" id="slot_3_2" onclick="tapSlot3(this)" style="width:160px; height:80px; background:#e2e8f0; border:2px dashed #cbd5e1; border-radius:8px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:12px; color:#94a3b8; cursor:pointer; user-select:none;">Toca para colocar</div><div style="font-size:24px; color:#94a3b8;">➤</div><div class="node-slot" id="slot_3_3" onclick="tapSlot3(this)" style="width:160px; height:80px; background:#e2e8f0; border:2px dashed #cbd5e1; border-radius:8px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:12px; color:#94a3b8; cursor:pointer; user-select:none;">Toca para colocar</div><div style="font-size:24px; color:#94a3b8;">➤</div><div class="node-slot" id="slot_3_4" onclick="tapSlot3(this)" style="width:160px; height:80px; background:#e2e8f0; border:2px dashed #cbd5e1; border-radius:8px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:12px; color:#94a3b8; cursor:pointer; user-select:none;">Toca para colocar</div><div style="font-size:24px; color:#94a3b8;">➤</div><div class="node-slot" id="slot_3_5" onclick="tapSlot3(this)" style="width:160px; height:80px; background:#e2e8f0; border:2px dashed #cbd5e1; border-radius:8px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:12px; color:#94a3b8; cursor:pointer; user-select:none;">Toca para colocar</div></div></div></div><button class="btn" onclick="validarNodos3()">Validar Flujo</button></div>
+<div class="screen module-screen" id="module_4"><span class="activity-badge badge-vf">✔️ Verdadero / Falso</span><h2>Misión 4: Sistemas de Soporte a Decisiones (DSS) vs Intuición</h2><p class="description">Analiza la afirmación conceptual de abajo sobre el rol del DSS en la gestión gerencial. ¿Es correcta según los principios de administración de sistemas?</p>
+        <div style="background:#fffbeb; border:1px solid #fef3c7; border-left:4px solid #d97706; padding:15px; margin-bottom:20px; font-size:14px; border-radius:8px;">
+            <strong style="color:#b45309; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <span>💡</span> Pista del Consultor / Advertencia
+            </strong>
+            <p style="color:#78350f; line-height:1.5; margin:0;">Tip del Consultor: Que un sistema de información sirva de apoyo no significa que reemplace el criterio humano o la responsabilidad legal del gerente. ¿Puede un software asumir la responsabilidad penal o financiera de una mala estrategia?</p>
+        </div>
+        <div style="padding:20px; background:#f8fafc; border-left:4px solid #6366f1; font-size:18px; margin-bottom:20px; font-weight:bold;">"Un Sistema de Soporte a Decisiones (DSS) es un software diseñado para automatizar por completo la toma de decisiones estratégicas de la empresa, eliminando la necesidad de criterio humano de los gerentes."</div><div style="display:flex; gap:15px; margin-bottom:16px;" id="vf_opts_4"><button class="btn btn-outline" style="flex:1; font-size:16px; border-color:#10b981; color:#10b981;" id="vf_true_4" onclick="selectVF4(true)">Verdadero</button><button class="btn btn-outline" style="flex:1; font-size:16px; border-color:#ef4444; color:#ef4444;" id="vf_false_4" onclick="selectVF4(false)">Falso</button></div><div class="feedback-panel" id="vf_fb_4"></div><button class="btn" id="btnVFConfirm4" onclick="confirmarVF4()" disabled style="width:100%;">Confirmar respuesta</button><button class="btn" id="btnVFNext4" onclick="proceedToNextModule()" style="display:none; width:100%;">Siguiente misión →</button></div>
+
+
+        <!-- SCREEN RESULTS -->
+        <div class="screen" id="screenResults">
+            <h2>Consola de Diagnóstico Final</h2>
+            <p class="description">Has completado los retos. Revisa tu desempeño y genera el reporte oficial obligatorio.</p>
+            
+            <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 20px;">
+                <h3 style="color: #047857; margin-bottom: 5px;">Puntuación Final</h3>
+                <div style="font-size: 42px; font-weight: 800; color: #10b981;" id="finalScoreVal">0</div>
+                <div style="font-size: 13px; color: #047857;" id="finalScoreMax">sobre 0 puntos posibles</div>
+                <div style="font-size: 12px; color: #64748b; margin-top: 6px;" id="finalScorePct"></div>
+                <div style="font-size: 12px; color: #64748b; margin-top: 4px;" id="finalJokersUsed"></div>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 30px;">
+                <button class="btn" onclick="downloadPDFDirect()">1. Descargar PDF (Obligatorio)</button>
+                <button class="btn btn-outline" onclick="printNatively()">2. Imprimir / Ver PDF</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- NUDGE MODAL (error feedback) -->
+    <div class="nudge-overlay" id="nudgeOverlay">
+        <div class="nudge-card">
+            <div style="font-size: 28px; margin-bottom: 10px;">⚠️</div>
+            <h3 style="margin-bottom: 8px;">Detente y Reflexiona</h3>
+            <div class="nudge-text" id="nudgeText">...</div>
+            <button class="btn" onclick="closeNudge()">Entendido, Reintentar</button>
+        </div>
+    </div>
+
+    <!-- JOKER REVEAL MODAL -->
+    <div class="joker-overlay" id="jokerOverlay">
+        <div class="joker-reveal-card">
+            <div style="font-size: 32px; margin-bottom: 8px;" id="jokerIcon">🧠</div>
+            <h3 style="margin-bottom: 4px;" id="jokerTitle">Consulta al Profe</h3>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">Este comodín ha sido consumido (-15 pts en este módulo)</p>
+            <div class="joker-reveal-content" id="jokerContent">...</div>
+            <button class="btn" onclick="closeJoker()" style="margin-top: 8px;">Entendido ✓</button>
+        </div>
+    </div>
+
+    <!-- PRINT TEMPLATE -->
+    <div id="printReportTemplate" style="width:100%; max-width:800px; margin:0 auto; padding:20px; font-family: Helvetica, sans-serif;">
+        <div style="border-bottom: 2px solid #2c3e50; padding-bottom: 15px; margin-bottom: 20px;">
+            <h2 style="color: #2c3e50; margin:0;">REPORTE OFICIAL DE EVALUACIÓN</h2>
+            <div style="font-size: 12px; color: #7f8c8d;">Sistemas de Información | Unidad V: La Toma de Decisiones</div>
+        </div>
+        <div style="font-size: 12px; margin-bottom: 20px;">
+            <strong>Integrantes del Equipo:</strong><br>
+            <div id="printNames"></div>
+        </div>
+        <div style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 20px; text-align: center;">
+            <div style="font-weight: bold;">CALIFICACIÓN FINAL</div>
+            <div style="font-size: 32px; color: #27ae60; font-weight: bold;" id="printScore">0.0 / 5.0</div>
+        </div>
+    </div>
+
+    <script>
+        // ── Core Engine State ──────────────────────────────────────────────
+        const isTeamMode = true;
+        let teamMembers = [];
+        let modoExplorador = false;
+        let explorerCurrentModule = 1;
+        let totalModulesCount = 0; // set after modules are injected
+
+        // ── Scoring System (100 pts per module) ───────────────────────────
+        const SCORE_BASE_PER_MODULE  = 100;
+        const SCORE_DISCOUNT_CONSULTA = 15;
+        const SCORE_DISCOUNT_VOTO     = 10;
+        const SCORE_DISCOUNT_SEGUNDA  =  5;
+        const SCORE_DISCOUNT_ERROR    = 10;
+        const SCORE_MIN_PER_MODULE    = 10;
+
+        let moduleScores    = []; // score per completed module
+        let currentModuleBonus = SCORE_BASE_PER_MODULE; // running score for current module
+        let currentModuleIndex = 1;
+
+        // ── Joker State ───────────────────────────────────────────────────
+        let jokers = { consulta: true, voto: true, segunda: true };
+        let jokersUsedCount = 0;
+        // Per-module joker data stored in logDesempeno
+        let currentModuleJokers = [];
+        // Hint text of current module (set by each module renderer)
+        let currentModuleHint = '';
+
+        // ── Stats ─────────────────────────────────────────────────────────
+        let totalAciertos   = 0;
+        let totalDesaciertos = 0;
+        let logDesempeno = [];
+
+        function registrarProgresoModulo(tituloModulo, preguntaInstruccion, detalleRespuesta, erroresModulo) {
+            totalAciertos++;
+            // Clamp module score to minimum
+            if (currentModuleBonus < SCORE_MIN_PER_MODULE) currentModuleBonus = SCORE_MIN_PER_MODULE;
+            moduleScores.push(currentModuleBonus);
+            logDesempeno.push({
+                mision: 'Misión ' + currentModuleIndex,
+                titulo: tituloModulo,
+                pregunta: preguntaInstruccion || '',
+                detalle: detalleRespuesta,
+                errores: erroresModulo || 0,
+                puntaje: currentModuleBonus,
+                comodines: [...currentModuleJokers]
+            });
+            // Reset for next module
+            currentModuleBonus = SCORE_BASE_PER_MODULE;
+            currentModuleJokers = [];
+            currentModuleHint = '';
+        }
+
+        // ── Explorer Mode ──────────────────────────────────────────────────
+        function activarModoExplorador() {
+            modoExplorador = true;
+            document.getElementById('screenWelcome').classList.remove('active');
+            document.getElementById('explorerBanner').classList.add('visible');
+            // Count total modules
+            let idx = 1;
+            while (document.getElementById('module_' + idx)) { idx++; }
+            totalModulesCount = idx - 1;
+            explorerCurrentModule = 1;
+            showModuleExplorer(1);
+        }
+
+        function showModuleExplorer(index) {
+            document.querySelectorAll('.module-screen').forEach(s => {
+                s.classList.remove('active');
+                // Disable all interactive answer controls in explorer mode
+                s.querySelectorAll('button.btn:not(.explorer-ctrl), input, select').forEach(el => el.disabled = true);
+                // Show/hide explorer nav
+                let nav = s.querySelector('.explorer-nav');
+                if (nav) nav.classList.add('visible');
+            });
+            const target = document.getElementById('module_' + index);
+            if (target) {
+                target.classList.add('active');
+                document.getElementById('explorerBanner').classList.add('visible');
+                // Inject explorer nav if not present
+                if (!target.querySelector('.explorer-nav')) {
+                    const nav = document.createElement('div');
+                    nav.className = 'explorer-nav visible';
+                    nav.innerHTML = `
+                        ${index > 1 ? `<button class="btn btn-outline explorer-ctrl" onclick="showModuleExplorer(${index - 1})">← Anterior</button>` : ''}
+                        <button class="btn explorer-ctrl" onclick="salirModoExplorador()">✏️ Registrar equipo y responder</button>
+                        ${index < totalModulesCount ? `<button class="btn btn-outline explorer-ctrl" onclick="showModuleExplorer(${index + 1})">Siguiente →</button>` : ''}
+                    `;
+                    target.appendChild(nav);
+                }
+            }
+        }
+
+        function salirModoExplorador() {
+            modoExplorador = false;
+            document.querySelectorAll('.module-screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('explorerBanner').classList.remove('visible');
+            // Re-enable controls
+            document.querySelectorAll('.module-screen button, .module-screen input').forEach(el => el.disabled = false);
+            document.getElementById('screenWelcome').classList.add('active');
+        }
+
+        // ── Team registration & simulation start ──────────────────────────
+        function initWelcome() {
+            const container = document.getElementById('teamInputArea');
+            if (isTeamMode) {
+                container.innerHTML = `
+                    <label class="input-label">Nombres de los Integrantes del Equipo:</label>
+                    <div class="team-members-list" id="memberList">
+                        <input type="text" class="text-input member-input" placeholder="Integrante 1 (Nombre Completo)">
+                        <input type="text" class="text-input member-input" placeholder="Integrante 2 (Nombre Completo)">
+                    </div>
+                    <button class="btn btn-outline" style="font-size:12px; padding:6px 12px;" onclick="addMember()">+ Añadir Integrante</button>
+                `;
+            } else {
+                container.innerHTML = `
+                    <label class="input-label">Tu Nombre Completo:</label>
+                    <input type="text" class="text-input member-input" id="singleName" placeholder="Escribe tu nombre para comenzar...">
+                `;
+            }
+        }
+
+        function addMember() {
+            const list = document.getElementById('memberList');
+            const input = document.createElement('input');
+            input.type = "text";
+            input.className = "text-input member-input";
+            input.placeholder = "Integrante " + (list.children.length + 1);
+            list.appendChild(input);
+        }
+
+        function startSimulation() {
+            const inputs = document.querySelectorAll('.member-input');
+            teamMembers = Array.from(inputs).map(i => i.value.trim()).filter(v => v !== "");
+            if (teamMembers.length === 0) {
+                alert("Debes ingresar al menos un nombre para comenzar.");
+                return;
+            }
+            document.getElementById('screenWelcome').classList.remove('active');
+            document.getElementById('statusBar').style.display = 'flex';
+            // Count total modules
+            let idx = 1;
+            while (document.getElementById('module_' + idx)) { idx++; }
+            totalModulesCount = idx - 1;
+            showModule(1);
+        }
+
+        function showModule(index) {
+            document.querySelectorAll('.module-screen').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById('module_' + index);
+            if (target) {
+                target.classList.add('active');
+                document.getElementById('currentMod').innerText = index + ' / ' + totalModulesCount;
+                // Reset module score tracker
+                currentModuleBonus = SCORE_BASE_PER_MODULE;
+                currentModuleJokers = [];
+                currentModuleHint = '';
+            } else {
+                finishSimulation();
+            }
+        }
+
+        function proceedToNextModule() {
+            currentModuleIndex++;
+            showModule(currentModuleIndex);
+        }
+
+        // ── Joker System ──────────────────────────────────────────────────
+        function usarComodin(tipo) {
+            if (!jokers[tipo]) return;
+            jokers[tipo] = false;
+            jokersUsedCount++;
+            currentModuleJokers.push(tipo);
+
+            const btnMap = { consulta: 'jokerConsulta', voto: 'jokerVoto', segunda: 'jokerSegunda' };
+            document.getElementById(btnMap[tipo]).classList.add('used');
+
+            if (tipo === 'consulta') {
+                currentModuleBonus = Math.max(SCORE_MIN_PER_MODULE, currentModuleBonus - SCORE_DISCOUNT_CONSULTA);
+                const hint = currentModuleHint || 'El docente te sugiere revisar los conceptos clave del módulo antes de responder.';
+                showJokerReveal('🧠', 'Consulta al Profe', `(−${SCORE_DISCOUNT_CONSULTA} pts en este módulo)`, hint);
+            } else if (tipo === 'voto') {
+                currentModuleBonus = Math.max(SCORE_MIN_PER_MODULE, currentModuleBonus - SCORE_DISCOUNT_VOTO);
+                // Generate plausible but slightly misleading vote distribution
+                const a = Math.floor(Math.random() * 30) + 35;
+                const b = Math.floor(Math.random() * 25) + 15;
+                const c = 100 - a - b;
+                showJokerReveal('👥', 'Voto del Aula', `(−${SCORE_DISCOUNT_VOTO} pts en este módulo)`,
+                    `Distribución de respuestas del aula:<br><br>
+                    <strong>Opción A:</strong> ${a}%<br>
+                    <strong>Opción B:</strong> ${b}%<br>
+                    <strong>Opción C:</strong> ${c}%<br><br>
+                    <em>Recuerda: el aula no siempre tiene razón. Discute con tu equipo antes de decidir.</em>`);
+            } else if (tipo === 'segunda') {
+                currentModuleBonus = Math.max(SCORE_MIN_PER_MODULE, currentModuleBonus - SCORE_DISCOUNT_SEGUNDA);
+                showJokerReveal('🔄', 'Segunda Oportunidad', `(−${SCORE_DISCOUNT_SEGUNDA} pts en este módulo)`,
+                    'Tu selección actual ha sido borrada. Analiza nuevamente y elige tu respuesta.');
+                // Reset current selection (handled per module — this notifies)
+            }
+        }
+
+        function showJokerReveal(icon, title, subtitle, content) {
+            document.getElementById('jokerIcon').innerText = icon;
+            document.getElementById('jokerTitle').innerText = title;
+            document.getElementById('jokerContent').innerHTML = content;
+            document.querySelector('#jokerOverlay p').innerText = subtitle;
+            document.getElementById('jokerOverlay').classList.add('active');
+        }
+
+        function closeJoker() {
+            document.getElementById('jokerOverlay').classList.remove('active');
+        }
+
+        // ── Error Feedback (no lives — just nudge + score penalty) ─────────
+        function triggerError(nudgeMessage) {
+            totalDesaciertos++;
+            currentModuleBonus = Math.max(SCORE_MIN_PER_MODULE, currentModuleBonus - SCORE_DISCOUNT_ERROR);
+            showNudge(nudgeMessage);
+        }
+
+        function showNudge(msg) {
+            document.getElementById('nudgeText').innerText = msg;
+            document.getElementById('nudgeOverlay').classList.add('active');
+        }
+
+        function closeNudge() {
+            document.getElementById('nudgeOverlay').classList.remove('active');
+        }
+
+        // ── Finish & Results ──────────────────────────────────────────────
+        function finishSimulation() {
+            document.getElementById('statusBar').style.display = 'none';
+            document.getElementById('screenResults').classList.add('active');
+
+            const totalScore = moduleScores.reduce((a, b) => a + b, 0);
+            const maxScore   = totalModulesCount * SCORE_BASE_PER_MODULE;
+            const pct = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+            const jokersLeft = Object.values(jokers).filter(v => v).length;
+
+            document.getElementById('finalScoreVal').innerText  = totalScore;
+            document.getElementById('finalScoreMax').innerText  = `sobre ${maxScore} puntos posibles`;
+            document.getElementById('finalScorePct').innerText  = `${pct}% de efectividad`;
+            document.getElementById('finalJokersUsed').innerText = `Comodines usados: ${jokersUsedCount} | Restantes: ${jokersLeft}`;
+
+            // Build on-screen log
+            let summaryHTML = `
+                <div style="display:flex; justify-content:space-around; background:#f8fafc; padding:15px; border-radius:8px; margin:20px 0; border:1px solid #e2e8f0;">
+                    <div><strong>Aciertos:</strong> <span style="color:#10b981; font-weight:bold;">${totalAciertos}</span></div>
+                    <div><strong>Errores:</strong> <span style="color:#ef4444; font-weight:bold;">${totalDesaciertos}</span></div>
+                    <div><strong>Comodines usados:</strong> <span style="color:#f59e0b; font-weight:bold;">${jokersUsedCount}/3</span></div>
+                </div>
+                <h4 style="margin-top:20px; margin-bottom:10px; font-size:14px; text-transform:uppercase; color:#64748b;">Desglose por Misión:</h4>
+                <div style="text-align:left; display:flex; flex-direction:column; gap:10px;">
+            `;
+            logDesempeno.forEach(item => {
+                const jokersStr = item.comodines.length > 0 ? ' | Comodines: ' + item.comodines.join(', ') : '';
+                summaryHTML += `
+                    <div style="background:white; border:1px solid #e2e8f0; border-left:4px solid #10b981; padding:12px; border-radius:6px; font-size:13px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <strong style="color:#0f172a;">${item.mision}: ${item.titulo}</strong>
+                            <span style="font-size:13px; font-weight:800; color:#0284c7;">${item.puntaje} pts</span>
+                        </div>
+                        ${item.pregunta ? `<div style="font-size:12px; color:#475569; margin-top:4px; font-style:italic;"><strong>Instrucción:</strong> ${item.pregunta}</div>` : ''}
+                        <div style="color:#0f172a; margin-top:4px;"><strong>Respuesta:</strong> ${item.detalle}</div>
+                        <div style="font-size:11px; color:${item.errores > 0 ? '#ef4444' : '#10b981'}; margin-top:4px;">Errores: ${item.errores}${jokersStr}</div>
+                    </div>
+                `;
+            });
+            summaryHTML += `</div>`;
+
+            const resultsCard = document.getElementById('screenResults');
+            let logContainer = document.getElementById('onScreenLogContainer');
+            if (!logContainer) {
+                logContainer = document.createElement('div');
+                logContainer.id = 'onScreenLogContainer';
+                resultsCard.insertBefore(logContainer, resultsCard.querySelector('div[style*="display: flex"]'));
+            }
+            logContainer.innerHTML = summaryHTML;
+        }
+
+        // ── PDF Generation ────────────────────────────────────────────────
+        function downloadPDFDirect() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const now = new Date().toLocaleString();
+
+            const totalScore = moduleScores.reduce((a, b) => a + b, 0);
+            const maxScore   = totalModulesCount * SCORE_BASE_PER_MODULE;
+            const pct = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+            const jokersLeft = Object.values(jokers).filter(v => v).length;
+
+            // Header
+            doc.setFillColor(15, 23, 42);
+            doc.rect(0, 0, 210, 32, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(13);
+            doc.text("IUTEMBI - COMPROBANTE OFICIAL DE EVALUACIÓN", 14, 13);
+            doc.setFontSize(9);
+            doc.setFont("Helvetica", "normal");
+            doc.text("Sistemas de Información | Unidad V: La Toma de Decisiones", 14, 20);
+            doc.text("Fecha y Hora: " + now, 14, 26);
+
+            // Team
+            doc.setTextColor(15, 23, 42);
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(10);
+            doc.text("ESTUDIANTE(S) / INTEGRANTES:", 14, 42);
+            doc.setFont("Helvetica", "normal");
+            let y = 48;
+            teamMembers.forEach(m => {
+                doc.text("• " + m, 18, y);
+                y += 6;
+            });
+
+            // Score box
+            y += 4;
+            doc.setFillColor(248, 250, 252);
+            doc.setDrawColor(226, 232, 240);
+            doc.roundedRect(14, y, 182, 34, 3, 3, 'FD');
+
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(9);
+            doc.setTextColor(100, 116, 139);
+            doc.text("PUNTUACIÓN TOTAL", 20, y + 8);
+            doc.text("PORCENTAJE", 90, y + 8);
+            doc.text("COMODINES USADOS", 140, y + 8);
+
+            doc.setFontSize(15);
+            doc.setFont("Helvetica", "bold");
+            doc.setTextColor(16, 185, 129);
+            doc.text(`${totalScore} / ${maxScore} pts`, 20, y + 20);
+
+            doc.setTextColor(15, 23, 42);
+            doc.setFontSize(13);
+            doc.text(`${pct}%`, 90, y + 20);
+
+            doc.setTextColor(245, 158, 11);
+            doc.text(`${jokersUsedCount} / 3`, 140, y + 20);
+
+            doc.setFont("Helvetica", "normal");
+            doc.setFontSize(8);
+            doc.setTextColor(100, 116, 139);
+            doc.text(`Errores totales: ${totalDesaciertos} | Comodines restantes: ${jokersLeft}`, 20, y + 28);
+
+            // Breakdown
+            y += 42;
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(10);
+            doc.setTextColor(15, 23, 42);
+            doc.text("DETALLE DE EJERCICIOS Y RESPUESTAS DESARROLLADAS:", 14, y);
+            y += 8;
+
+            logDesempeno.forEach((item) => {
+                let tituloText = `${item.mision}: ${item.titulo} — ${item.puntaje} pts`;
+                let estadoText = `Errores: ${item.errores} | Comodines: ${item.comodines.length > 0 ? item.comodines.join(', ') : 'ninguno'}`;
+                const maxW = 155;
+
+                doc.setFont("Helvetica", "italic");
+                doc.setFontSize(7.5);
+                let preguntaLines = item.pregunta ? doc.splitTextToSize("Instrucción: " + item.pregunta, maxW) : [];
+
+                doc.setFont("Helvetica", "normal");
+                doc.setFontSize(7.5);
+                let respuestaLines = doc.splitTextToSize("Respuesta: " + item.detalle, maxW);
+
+                const pad = 5;
+                const lineH_title = 4;
+                const lineH_small = 3.2;
+                const sectionGap = 3;
+
+                let contentH = lineH_title;
+                if (preguntaLines.length > 0) contentH += sectionGap + (preguntaLines.length * lineH_small);
+                contentH += sectionGap + (respuestaLines.length * lineH_small);
+                contentH += sectionGap + lineH_small;
+
+                let cardHeight = contentH + (pad * 2);
+
+                if (y + cardHeight > 270) { doc.addPage(); y = 20; }
+
+                doc.setFillColor(255, 255, 255);
+                doc.setDrawColor(226, 232, 240);
+                doc.roundedRect(14, y, 182, cardHeight, 2, 2, 'FD');
+
+                let curY = y + pad + lineH_title;
+
+                doc.setFont("Helvetica", "bold");
+                doc.setFontSize(9);
+                doc.setTextColor(2, 132, 199);
+                doc.text(tituloText, 18, curY);
+                curY += sectionGap;
+
+                if (preguntaLines.length > 0) {
+                    doc.setFont("Helvetica", "italic");
+                    doc.setFontSize(7.5);
+                    doc.setTextColor(100, 116, 139);
+                    preguntaLines.forEach(line => { curY += lineH_small; doc.text(line, 18, curY); });
+                    curY += sectionGap;
+                }
+
+                doc.setFont("Helvetica", "normal");
+                doc.setFontSize(7.5);
+                doc.setTextColor(15, 23, 42);
+                respuestaLines.forEach(line => { curY += lineH_small; doc.text(line, 18, curY); });
+                curY += sectionGap;
+
+                doc.setFontSize(7);
+                doc.setTextColor(item.errores > 0 ? 239 : 16, item.errores > 0 ? 68 : 185, item.errores > 0 ? 68 : 129);
+                curY += lineH_small;
+                doc.text(estadoText, 18, curY);
+
+                y += cardHeight + 4;
+            });
+
+            // Footer Code
+            doc.setFontSize(7.5);
+            doc.setTextColor(148, 163, 184);
+            const hash = "IUTEMBI-EVAL-" + Math.random().toString(36).substring(2, 9).toUpperCase();
+            doc.text(`Código Único de Verificación: ${hash} | Documento Oficial de Evaluación`, 14, 287);
+
+            // Dynamic Filename: actividad_unidad_{NRO}_{NOMBRES}.pdf
+            let nombresClean = teamMembers.join("_y_").replace(/[^a-zA-Z0-9_]/g, "_").substring(0, 45);
+            let unidadNum = "5";
+            let filename = `actividad_unidad_${unidadNum}_${nombresClean}.pdf`;
+
+            // Save PDF Blob
+            const blob = doc.output('blob');
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => { document.body.removeChild(link); }, 100);
+        }
+
+        let data_prefix = "sabado5_unidad5";
+
+        function printNatively() {
+            window.print();
+        }
+
+        // Initialize
+        initWelcome();
+
+        // INJECTED MODULES JS
+        
+        // Set module hint for Consulta al Profe joker
+        (function() { currentModuleHint = "Ojo: Decidir restaurar una base de datos caída a mitad del día es crítico, pero es una decisión operativa/táctica porque sigue un protocolo técnico establecido. En cambio, decidir si migrar toda la infraestructura de servidores locales de la empresa a Amazon Web Services (AWS) es estratégico porque define el presupuesto de TI y la arquitectura tecnológica de toda la organización a largo plazo."; })();
+        
+        let selectedItem1 = null;
+        let matches1 = {};
+        let erroresModulo1 = 0;
+        const itemTexts1 = ["Autorizar el reembolso inmediato de una factura duplicada de un cliente en caja", "Definir las pol\u00edticas de ciberseguridad corporativas a 3 a\u00f1os y contratar un seguro de datos", "Decidir cu\u00e1l de los dos proveedores de internet contratar para el balanceo de carga del servidor", "Cambiar el proveedor del ERP principal de la corporaci\u00f3n para los pr\u00f3ximos 5 a\u00f1os", "Suspender temporalmente las ventas de la tarde debido a un retraso f\u00edsico en el inventario", "Bloquear temporalmente el acceso de un usuario espec\u00edfico al sistema por sospecha de hackeo"];
+        const correctMatches1 = {"0": "Nivel Operativo", "1": "Nivel Estrat\u00e9gico", "2": "Nivel T\u00e1ctico", "3": "Nivel Estrat\u00e9gico", "4": "Nivel T\u00e1ctico", "5": "Nivel Operativo"};
+        
+        function selectItem1(evt, id) {
+            if (evt) evt.stopPropagation();
+            const pool = document.getElementById('items_list_1');
+            const el = document.getElementById('item_1_' + id);
+            
+            if (el.parentElement.id !== 'items_list_1') {
+                pool.appendChild(el);
+                el.style.borderColor = '#e2e8f0';
+                el.style.background = 'white';
+                delete matches1[id];
+                selectedItem1 = null;
+                return;
+            }
+            
+            document.querySelectorAll('#items_list_1 .item-drag').forEach(e => {
+                if (e.parentElement.id === 'items_list_1') e.style.borderColor = '#e2e8f0';
+            });
+            el.style.borderColor = '#0284c7';
+            selectedItem1 = id;
+        }
+
+        function selectCat1(cat) {
+            if (selectedItem1 !== null) {
+                let el = document.getElementById('item_1_' + selectedItem1);
+                el.style.borderColor = '#0284c7';
+                el.style.background = '#f0f9ff';
+                document.getElementById('cat_1_' + cat).appendChild(el);
+                matches1[selectedItem1] = cat;
+                selectedItem1 = null;
+            }
+        }
+
+        function validarMod1() {
+            if (Object.keys(matches1).length < 6) {
+                alert('Asigna todos los conceptos primero antes de validar.'); 
+                return;
+            }
+            let errores = 0;
+            const pool = document.getElementById('items_list_' + 1);
+            
+            for (let key in matches1) {
+                let el = document.getElementById('item_' + 1 + '_' + key);
+                if (matches1[key] !== correctMatches1[key]) {
+                    errores++;
+                    pool.appendChild(el);
+                    el.style.borderColor = '#ef4444';
+                    el.style.background = '#fef2f2';
+                    delete matches1[key];
+                } else {
+                    el.style.borderColor = '#10b981';
+                    el.style.background = '#ecfdf5';
+                }
+            }
+            
+            if (errores > 0) {
+                erroresModulo1 += errores;
+                triggerError("¡Error de alineación jerárquica! Recuerda: el nivel Operativo maneja decisiones estructuradas e inmediatas de ejecución técnica; el Táctico gestiona decisiones departamentales semiestructuradas de control a corto/mediano plazo; el Estratégico decide el rumbo, políticas y gran presupuesto de la empresa a largo plazo.");
+            } else {
+                let resumen = Object.keys(matches1).map(k => '• ' + itemTexts1[k] + ' => ' + matches1[k]).join('\n');
+                registrarProgresoModulo("Matriz Jerárquica de Decisiones", "Distribuye cada decisión del área de tecnología y negocios en el nivel jerárquico correspondiente de la organización. Recuerda que no depende de la urgencia, sino del alcance, impacto temporal y grado de estructuración de la decisión.", resumen, erroresModulo1);
+                proceedToNextModule();
+            }
+        }
+        
+
+        // Set module hint for Consulta al Profe joker
+        (function() { currentModuleHint = "Analiza el dilema: La opción barata a corto plazo puede costar miles de dólares si causa pérdida de datos transaccionales recientes. La opción cara en la nube te da continuidad de inmediato. Y la opción de reparar en caliente sin respaldo es un suicidio técnico."; })();
+        
+        const escenarioCorrecto2 = 1;
+        const opcionesTexts2 = ["Intentar reparar la base de datos directamente en el servidor da\u00f1ado sin hacer un respaldo previo para ahorrar tiempo y reanudar las ventas en 15 minutos.", "Migrar de inmediato los servicios esenciales a una instancia de contingencia preconfigurada en la nube, asumiendo un costo operativo temporal pero asegurando la continuidad del negocio y la integridad de los datos transaccionales.", "Apagar los sistemas de informaci\u00f3n por completo y esperar a que el proveedor de hardware responda a la garant\u00eda f\u00edsica de 48 horas para no gastar presupuesto de la empresa.", "Delegar la decisi\u00f3n al cajero de turno para que intente solucionar el error de red reiniciando manualmente el enrutador central."];
+        let selectedOpt2 = null;
+        let erroresModulo2 = 0;
+        let answered2 = false;
+
+        function selectOpt2(idx) {
+            if (answered2) return;
+            // Reset styles
+            document.querySelectorAll('#opts_2 button').forEach(b =>
+                b.classList.remove('selected')
+            );
+            document.getElementById('opt_2_' + idx).classList.add('selected');
+            selectedOpt2 = idx;
+            document.getElementById('btnConfirm2').disabled = false;
+        }
+
+        function confirmarOpt2() {
+            if (selectedOpt2 === null || answered2) return;
+            const fb = document.getElementById('fb_2');
+            if (selectedOpt2 === escenarioCorrecto2) {
+                answered2 = true;
+                fb.className = 'feedback-panel correct';
+                const retroTxt = `¡Correcto! En una crisis de TI, la prioridad de un tomador de decisiones es la continuidad del negocio y la integridad de los datos transaccionales. Migrar a la nube de contingencia minimiza el tiempo de inactividad ($500/hora) y resguarda los datos, mientras que reparar en caliente sin respaldo viola los estándares básicos de seguridad de TI.` || '¡Correcto!';
+                fb.innerHTML = '<strong>✅ ¡Correcto!</strong><br>' + retroTxt;
+                fb.style.display = 'block';
+                document.getElementById('btnConfirm2').style.display = 'none';
+                document.getElementById('btnNext2').style.display = 'inline-flex';
+                registrarProgresoModulo("Gabinete de Crisis: El Servidor Principal Colapsado", "El servidor principal de la distribuidora ha fallado. La empresa pierde $500 por hora de inactividad. La directiva te pide una solución inmediata. Evaluando las etapas del proceso decisorio y el costo de oportunidad, ¿cuál de las siguientes opciones es la técnicamente más adecuada y profesional?", opcionesTexts2[selectedOpt2], erroresModulo2);
+            } else {
+                erroresModulo2++;
+                // Deselect so they can retry
+                document.querySelectorAll('#opts_2 button').forEach(b => b.classList.remove('selected'));
+                selectedOpt2 = null;
+                document.getElementById('btnConfirm2').disabled = true;
+                fb.className = 'feedback-panel incorrect';
+                fb.innerHTML = '<strong>❌ Incorrecto.</strong> ¡Cuidado! Esa decisión pone en riesgo crítico la integridad de los datos o detiene la empresa por demasiado tiempo sin justificación financiera. Como consultor de TI, debes balancear costo de inactividad, riesgo de pérdida de datos y continuidad operativa.';
+                fb.style.display = 'block';
+                triggerError("¡Cuidado! Esa decisión pone en riesgo crítico la integridad de los datos o detiene la empresa por demasiado tiempo sin justificación financiera. Como consultor de TI, debes balancear costo de inactividad, riesgo de pérdida de datos y continuidad operativa.");
+            }
+        }
+        
+
+        // Set module hint for Consulta al Profe joker
+        (function() { currentModuleHint = "Tip del Auditor de TI: No puedes evaluar alternativas si no has analizado y definido primero el objetivo del problema. Y no tiene sentido escoger una opción si no vas a implementarla y evaluar los resultados (retroalimentación) a través de métricas claras."; })();
+        
+        const correctFlow3 = ["n1", "n2", "n3", "n4", "n5", "n6"];
+        const nodeTexts3 = {"n1": "Detectar lentitud en el sistema de facturaci\u00f3n (Percepci\u00f3n)", "n2": "Definir que la meta es reducir el tiempo de respuesta a menos de 2 segundos", "n3": "Identificar 3 opciones: ampliar ancho de banda, purgar logs o actualizar hardware", "n4": "Calcular costos y tiempos de implementaci\u00f3n para cada una de las 3 opciones", "n5": "Seleccionar la opci\u00f3n de purgar logs y contratar 10MB extras de ancho de banda", "n6": "Monitorear el rendimiento una semana despu\u00e9s de la soluci\u00f3n (Evaluaci\u00f3n)", "n7": "Instalar un servidor de juegos en la red de la oficina sin reportar al jefe", "n8": "Reclamar al proveedor sin tener claras las m\u00e9tricas del problema"};
+        let erroresModulo3 = 0;
+        let selectedNodo3 = null; // the DOM element currently "in hand"
+
+        function tapNodo3(el) {
+            const pool = document.getElementById('nodos_pool_3');
+            // If already in a slot, pull back to pool
+            if (el.parentElement.classList.contains('node-slot')) {
+                el.parentElement.innerHTML = '';
+                el.parentElement.style.borderColor = '#cbd5e1';
+                el.parentElement.innerHTML = 'Toca para colocar';
+                pool.appendChild(el);
+            }
+            // Deselect previous selection
+            if (selectedNodo3 && selectedNodo3 !== el) {
+                selectedNodo3.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                selectedNodo3.style.transform = 'none';
+            }
+            if (selectedNodo3 === el) {
+                // Toggle off
+                el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                el.style.transform = 'none';
+                selectedNodo3 = null;
+            } else {
+                el.style.boxShadow = '0 0 0 3px rgba(2,132,199,0.35)';
+                el.style.transform = 'scale(1.04)';
+                selectedNodo3 = el;
+            }
+        }
+
+        function tapSlot3(slotEl) {
+            if (!selectedNodo3) return;
+            // If slot occupied, return occupant to pool
+            const pool = document.getElementById('nodos_pool_3');
+            const children = slotEl.querySelectorAll('.tap-node');
+            children.forEach(c => pool.appendChild(c));
+            slotEl.innerHTML = '';
+            // Place selected node in slot
+            const node = selectedNodo3;
+            node.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+            node.style.transform = 'none';
+            slotEl.appendChild(node);
+            slotEl.style.borderColor = '#0284c7';
+            selectedNodo3 = null;
+        }
+
+        function validarNodos3() {
+            let slots = document.querySelectorAll('#flow_canvas_3 .node-slot');
+            let currentFlow = [];
+            let allFilled = true;
+            slots.forEach(slot => {
+                const n = slot.querySelector('.tap-node');
+                if (!n) { allFilled = false; } else { currentFlow.push(n.dataset.nodeid); }
+            });
+            if (!allFilled) { alert('Debes completar todas las ranuras antes de validar.'); return; }
+            let isCorrect = correctFlow3.every((id, i) => currentFlow[i] === id);
+            if (isCorrect) {
+                let resumen = currentFlow.map(id => nodeTexts3[id]).join(' ➤ ');
+                registrarProgresoModulo("El Algoritmo Decisorio: Fases del Proceso", "Arrastra y conecta los nodos lógicos en orden cronológico secuencial para estructurar el Proceso Decisorio de TI frente a un problema de rendimiento de red.", resumen, erroresModulo3);
+                proceedToNextModule();
+            } else {
+                erroresModulo3++;
+                triggerError("¡Secuencia lógica incorrecta! El proceso decisorio estructurado siempre va desde identificar el problema (percepción), definir objetivos de resolución, buscar y evaluar alternativas cuantitativamente, hasta la selección, implementación y el control/retroalimentación final.");
+            }
+        }
+        
+
+        // Set module hint for Consulta al Profe joker
+        (function() { currentModuleHint = "Tip del Consultor: Que un sistema de información sirva de apoyo no significa que reemplace el criterio humano o la responsabilidad legal del gerente. ¿Puede un software asumir la responsabilidad penal o financiera de una mala estrategia?"; })();
+        
+        const correctVal4 = false;
+        let selectedVal4 = null;
+        let erroresModulo4 = 0;
+        let answeredVF4 = false;
+
+        function selectVF4(val) {
+            if (answeredVF4) return;
+            document.getElementById('vf_true_4').classList.remove('selected');
+            document.getElementById('vf_false_4').classList.remove('selected');
+            
+            if (val) {
+                document.getElementById('vf_true_4').classList.add('selected');
+            } else {
+                document.getElementById('vf_false_4').classList.add('selected');
+            }
+            selectedVal4 = val;
+            document.getElementById('btnVFConfirm4').disabled = false;
+        }
+
+        function confirmarVF4() {
+            if (selectedVal4 === null || answeredVF4) return;
+            const fb = document.getElementById('vf_fb_4');
+            if (selectedVal4 === correctVal4) {
+                answeredVF4 = true;
+                fb.className = 'feedback-panel correct';
+                const expTxt = `Un DSS no reemplaza al tomador de decisiones. Su función es procesar y visualizar datos complejos de forma analítica para proveer alternativas y simulaciones de escenarios, pero el juicio final, la ponderación ética/riesgo y el factor humano recaen en el gerente de la empresa.` || '¡Explicación correcta!';
+                fb.innerHTML = '<strong>✅ ¡Correcto! Explicación:</strong><br>' + expTxt;
+                fb.style.display = 'block';
+                document.getElementById('btnVFConfirm4').style.display = 'none';
+                document.getElementById('btnVFNext4').style.display = 'block';
+                registrarProgresoModulo("Sistemas de Soporte a Decisiones (DSS) vs Intuición", "Analiza la afirmación conceptual de abajo sobre el rol del DSS en la gestión gerencial. ¿Es correcta según los principios de administración de sistemas?", "Respuesta: " + (selectedVal4 ? "Verdadero" : "Falso") + ". Explicación: " + expTxt, erroresModulo4);
+            } else {
+                erroresModulo4++;
+                document.getElementById('vf_true_4').classList.remove('selected');
+                document.getElementById('vf_false_4').classList.remove('selected');
+                selectedVal4 = null;
+                document.getElementById('btnVFConfirm4').disabled = true;
+                fb.className = 'feedback-panel incorrect';
+                fb.innerHTML = '<strong>❌ Incorrecto.</strong> ¡Cuidado! Recuerda la diferencia entre automatizar transacciones rutinarias y dar soporte a decisiones complejas. El DSS no reemplaza la responsabilidad final del tomador de decisiones.';
+                fb.style.display = 'block';
+                triggerError("¡Cuidado! Recuerda la diferencia entre automatizar transacciones rutinarias y dar soporte a decisiones complejas. El DSS no reemplaza la responsabilidad final del tomador de decisiones.");
+            }
+        }
+        
+
+    </script>
+</body>
+</html>

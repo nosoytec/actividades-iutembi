@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electiva V - Emprendimiento e Innovación Empresarial | Unidad IV (Parte 2) - Gestión Financiera, Fuentes de Financiamiento y Pitch Deck</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --border-color: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --primary: #0284c7;
+            --primary-hover: #0369a1;
+            --success: #10b981;
+            --error: #ef4444;
+            --font-family: 'Outfit', sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-main);
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 24px 24px;
+            color: var(--text-main);
+            font-family: var(--font-family);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 850px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            padding: 40px;
+            position: relative;
+        }
+
+        /* Top Bar: Jokers and Progress */
+        .top-status-bar {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* Joker Panel */
+        .joker-panel {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .joker-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1.5px solid var(--border-color);
+            background: #fff;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: var(--font-family);
+            color: var(--text-main);
+        }
+        .joker-btn:hover:not(:disabled) {
+            border-color: var(--primary);
+            background: rgba(2,132,199,0.05);
+        }
+        .joker-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+        .joker-btn.used {
+            opacity: 0.35;
+            text-decoration: line-through;
+            pointer-events: none;
+        }
+
+        .progress-indicator {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        /* Screens */
+        .screen { display: none; opacity: 0; transform: translateY(8px); transition: all 0.3s; }
+        .screen.active { display: block; opacity: 1; transform: translateY(0); }
+
+        /* Typography */
+        h1 { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+        .app-subtitle { font-size: 12px; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 20px; display: block; }
+        h2 { font-size: 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+        h2::before { content: ''; width: 4px; height: 16px; background-color: var(--primary); border-radius: 2px; }
+        p.description { font-size: 14.5px; color: var(--text-muted); line-height: 1.5; margin-bottom: 24px; }
+
+        /* Form & Buttons */
+        .input-group { margin-bottom: 15px; }
+        .text-input { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-family: var(--font-family); }
+        .btn { padding: 12px 24px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: var(--font-family); }
+        .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+        .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); }
+        
+        .team-members-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        
+        .btn-outline.selected {
+            background-color: var(--primary) !important;
+            color: white !important;
+            border-color: var(--primary) !important;
+        }
+
+        /* Nudge Modal */
+        .nudge-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.4); backdrop-filter: blur(2px); z-index: 100; align-items: center; justify-content: center; }
+        .nudge-overlay.active { display: flex; }
+        .nudge-card { background: white; padding: 25px; border-radius: 12px; width: 100%; max-width: 460px; text-align: center; }
+        .nudge-text { background: #f8fafc; padding: 15px; border-left: 3px solid var(--error); margin: 15px 0; font-size: 14px; text-align: left; }
+
+        /* Joker Reveal Modal */
+        .joker-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.5); backdrop-filter: blur(3px); z-index: 110; align-items: center; justify-content: center; }
+        .joker-overlay.active { display: flex; }
+        .joker-reveal-card { background: white; padding: 28px; border-radius: 14px; width: 100%; max-width: 480px; text-align: center; border-top: 4px solid var(--primary); }
+        .joker-reveal-content { background: #f0f9ff; padding: 16px; border-left: 3px solid var(--primary); margin: 14px 0; font-size: 14px; text-align: left; line-height: 1.6; border-radius: 0 8px 8px 0; }
+
+        /* Explorer Mode Banner */
+        .explorer-banner {
+            display: none;
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border: 1px solid #f59e0b;
+            border-radius: 10px;
+            padding: 12px 18px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #92400e;
+            align-items: center;
+            gap: 10px;
+        }
+        .explorer-banner.visible { display: flex; }
+
+        /* Explorer nav buttons */
+        .explorer-nav { display: none; gap: 10px; margin-top: 20px; }
+        .explorer-nav.visible { display: flex; }
+
+        /* Activity type badges */
+        .activity-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+        }
+        .badge-seleccion   { background: #dbeafe; color: #1d4ed8; }
+        .badge-vf          { background: #dcfce7; color: #166534; }
+        .badge-clasificar  { background: #ffedd5; color: #c2410c; }
+        .badge-flujo       { background: #ede9fe; color: #6d28d9; }
+        .badge-dashboard   { background: #f1f5f9; color: #334155; }
+        .badge-emparejar   { background: #fef9c3; color: #854d0e; }
+        .badge-balanza     { background: #fee2e2; color: #b91c1c; }
+        .badge-mapa        { background: #cffafe; color: #0e7490; }
+
+        /* Feedback panel post-validation */
+        .feedback-panel {
+            display: none;
+            padding: 16px 20px;
+            border-radius: 10px;
+            margin: 16px 0;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .feedback-panel.correct { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
+        .feedback-panel.incorrect { background: #fef2f2; border-left: 4px solid #ef4444; color: #991b1b; }
+
+        /* Module Injected CSS */
+        
+
+
+
+
+
+        @media (max-width: 600px) {
+            .app-container { padding: 20px 16px; }
+            .joker-btn span.joker-label { display: none; }
+        }
+
+        @media print {
+            body { background: white !important; }
+            .app-container, .nudge-overlay, .joker-overlay { display: none !important; }
+            #printReportTemplate { display: block !important; }
+        }
+        #printReportTemplate { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- Top Status Bar (Jokers + Progress) -->
+        <div class="top-status-bar" id="statusBar">
+            <div class="joker-panel">
+                <span style="font-size:12px; font-weight:700; color:var(--text-muted); margin-right:4px;">COMODINES:</span>
+                <button class="joker-btn" id="jokerConsulta" onclick="usarComodin('consulta')">
+                    🧠 <span class="joker-label">Consulta</span>
+                </button>
+                <button class="joker-btn" id="jokerVoto" onclick="usarComodin('voto')">
+                    👥 <span class="joker-label">Voto</span>
+                </button>
+                <button class="joker-btn" id="jokerSegunda" onclick="usarComodin('segunda')">
+                    🔄 <span class="joker-label">2da oport.</span>
+                </button>
+            </div>
+            <div class="progress-indicator">Módulo <span id="currentMod">0</span> de 4</div>
+        </div>
+
+        <!-- SCREEN 0: Welcome / Team Input -->
+        <div class="screen active" id="screenWelcome">
+            <span class="app-subtitle">Electiva V - Emprendimiento e Innovación Empresarial | Unidad IV (Parte 2) - Gestión Financiera, Fuentes de Financiamiento y Pitch Deck</span>
+            <h1>El Arte de los Números y el Pitch de Inversión</h1>
+            <p class="description">Caso GreenEnergy: GreenEnergy es una startup que diseña y distribuye kits de paneles solares portátiles para campistas y hogares rurales sin conexión eléctrica. Cuentan con un MVP y 10 primeros clientes que validan el producto. Ahora necesitan clasificar costos, calcular su punto de equilibrio, proyectar flujo de caja y estructurar un Pitch Deck persuasivo para convencer a inversionistas de capital semilla.</p>
+
+            <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+                <strong>Modalidad:</strong> Trabajo en Equipo (El sistema pedirá el nombre de todos los integrantes)
+            </div>
+
+            <div id="teamInputArea">
+                <!-- Injected via JS based on modalidad -->
+            </div>
+
+            <!-- Explorer Mode Banner -->
+            <div class="explorer-banner" id="explorerBanner">
+                <span>👁️</span>
+                <span>MODO LECTURA — Navega libremente entre los módulos. Cuando estén listos, regístrate para responder.</span>
+            </div>
+
+            <button class="btn" id="btnIniciar" onclick="startSimulation()">Iniciar Misión 🚀</button>
+            <button class="btn btn-outline" id="btnExplorar" onclick="activarModoExplorador()" style="margin-left:10px;">👁️ Ver módulos primero</button>
+        </div>
+
+        <!-- INJECTED MODULES -->
+        <div class="screen module-screen" id="module_1"><span class="activity-badge badge-clasificar">🗂️ Clasificación</span><h2>Misión 1: Costos Fijos vs. Costos Variables</h2><p class="description">Clasifica cada egreso de GreenEnergy en su categoría correspondiente. Descarta los elementos que no sean costos.</p><div style="background:#f8fafc; border-left:4px solid #0284c7; padding:15px; margin-bottom:20px; font-size:14px; border-radius:6px;"><strong>Contexto del Caso:</strong> Calcularemos el modelo de equilibrio, pero antes debemos clasificar los egresos. Envía los errores conceptuales a 'Descartados'.</div>
+        <div style="background:#fffbeb; border:1px solid #fef3c7; border-left:4px solid #d97706; padding:15px; margin-bottom:20px; font-size:14px; border-radius:8px;">
+            <strong style="color:#b45309; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <span>💡</span> Pista del Consultor / Advertencia
+            </strong>
+            <p style="color:#78350f; line-height:1.5; margin:0;">Pista del Consultor: Los costos fijos se pagan independientemente de si vendes (ej. alquiler), los variables cambian en proporción a las ventas (ej. materia prima). El capital invertido no es un costo operativo.</p>
+        </div>
+        <div id="mod1_container" style="display:flex; gap:20px; margin-bottom:20px;"><div style="flex:1;"><h3>Categorías</h3><div class="cat-drop" onclick="selectCat1('Costos Fijos')" style="padding:15px; border:2px dashed #cbd5e1; margin-top:10px; border-radius:8px; cursor:pointer; min-height:80px;" id="cat_1_Costos Fijos"><strong style="color:#64748b; font-size:13px;">Costos Fijos</strong></div><div class="cat-drop" onclick="selectCat1('Costos Variables')" style="padding:15px; border:2px dashed #cbd5e1; margin-top:10px; border-radius:8px; cursor:pointer; min-height:80px;" id="cat_1_Costos Variables"><strong style="color:#64748b; font-size:13px;">Costos Variables</strong></div><div class="cat-drop" onclick="selectCat1('Descartados')" style="padding:15px; border:2px dashed #cbd5e1; margin-top:10px; border-radius:8px; cursor:pointer; min-height:80px;" id="cat_1_Descartados"><strong style="color:#64748b; font-size:13px;">Descartados</strong></div></div><div style="flex:1;"><h3>Conceptos (Haz clic para seleccionar/devolver)</h3><div id="items_list_1"><div class="item-drag" id="item_1_0" onclick="selectItem1(event, 0)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Alquiler del taller de ensamblaje.</div><div class="item-drag" id="item_1_1" onclick="selectItem1(event, 1)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Componentes de silicio y baterías de litio por kit.</div><div class="item-drag" id="item_1_2" onclick="selectItem1(event, 2)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Suscripción mensual del software CRM.</div><div class="item-drag" id="item_1_3" onclick="selectItem1(event, 3)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Comisión del 5% de la pasarela por cada pago.</div><div class="item-drag" id="item_1_4" onclick="selectItem1(event, 4)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Dinero de los ahorros de los fundadores (Capital).</div><div class="item-drag" id="item_1_5" onclick="selectItem1(event, 5)" style="padding:15px; background:white; border:1px solid #e2e8f0; margin-top:10px; border-radius:8px; cursor:pointer; transition:all 0.2s;">Sueldo de un gerente que aún no han contratado.</div></div></div></div><button class="btn" onclick="validarMod1()">Validar Clasificación</button></div>
+<div class="screen module-screen" id="module_2"><span class="activity-badge badge-seleccion">🔘 Selección simple</span><h2>Misión 2: Cálculo del Punto de Equilibrio</h2><p class="description">Calcula el Punto de Equilibrio (kits solares a vender mensualmente) para alcanzar rentabilidad cero.</p><div style="background:#f8fafc; border-left:4px solid #0284c7; padding:15px; margin-bottom:20px; font-size:14px; border-radius:6px;"><strong>Contexto del Caso:</strong> GreenEnergy tiene Costos Fijos mensuales totales de $2,000. El Precio de venta al público de cada kit es de $150, y su Costo Variable Unitario es de $70.</div>
+        <div style="background:#fffbeb; border:1px solid #fef3c7; border-left:4px solid #d97706; padding:15px; margin-bottom:20px; font-size:14px; border-radius:8px;">
+            <strong style="color:#b45309; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <span>💡</span> Pista del Consultor / Advertencia
+            </strong>
+            <p style="color:#78350f; line-height:1.5; margin:0;">Pista del Consultor: Margen Unitario = Precio ($150) - Costo Variable ($70) = $80. Punto de Equilibrio = Costos Fijos ($2,000) / Margen Unitario ($80).</p>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;" id="opts_2"><button class="btn btn-outline" style="text-align:left;" id="opt_2_0" onclick="selectOpt2(0)">13 kits solares al mes.</button><button class="btn btn-outline" style="text-align:left;" id="opt_2_1" onclick="selectOpt2(1)">25 kits solares al mes.</button><button class="btn btn-outline" style="text-align:left;" id="opt_2_2" onclick="selectOpt2(2)">40 kits solares al mes.</button></div><div class="feedback-panel" id="fb_2"></div><button class="btn" id="btnConfirm2" onclick="confirmarOpt2()" disabled>Confirmar respuesta</button><button class="btn" id="btnNext2" onclick="proceedToNextModule()" style="display:none; margin-left:10px;">Siguiente misión →</button></div>
+<div class="screen module-screen" id="module_3"><span class="activity-badge badge-dashboard">📊 Ensamblar dashboard</span><h2>Misión 3: El Pitch Deck de Alto Impacto</h2><p class="description">Arrastra las diapositivas esenciales para tu Pitch Deck a inversionistas semilla. Descarta el relleno.</p><div style="background:#f8fafc; border-left:4px solid #0284c7; padding:15px; margin-bottom:20px; font-size:14px; border-radius:6px;"><strong>Contexto del Caso:</strong> Tienes solo 5 minutos para pitchear ante Ángeles Inversores. Solo puedes incluir las diapositivas fundamentales y debes evitar aburrirlos con detalles excesivos.</div>
+        <div style="background:#fffbeb; border:1px solid #fef3c7; border-left:4px solid #d97706; padding:15px; margin-bottom:20px; font-size:14px; border-radius:8px;">
+            <strong style="color:#b45309; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <span>💡</span> Pista del Consultor / Advertencia
+            </strong>
+            <p style="color:#78350f; line-height:1.5; margin:0;">Pista del Consultor: Un inversionista quiere ver el Problema, la Solución, el Modelo de Negocio y la Tracción. No le interesa tu biografía de la infancia ni tecnicismos aburridos.</p>
+        </div>
+        <div style="display:flex; gap:20px; margin-bottom:20px; flex-wrap:wrap;"><div style="flex:1; min-width:250px; padding:15px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px;"><h3>Widgets Disponibles</h3><p style="font-size:12px; color:#64748b; margin:4px 0 10px;">💡 Toca un widget para seleccionarlo, luego toca el dashboard para colocarlo.</p><div id="widgets_pool_3" style="display:flex; flex-direction:column; gap:10px; margin-top:10px; min-height:200px;"><div class="tap-widget" id="widget_3_w1" data-widgetid="w1" onclick="tapWidget3(this)" style="padding:15px; background:white; color:#0f172a; border:1px solid #e2e8f0; border-left:4px solid #64748b; border-radius:6px; cursor:pointer; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05); user-select:none;">El Problema y la Solución</div><div class="tap-widget" id="widget_3_w2" data-widgetid="w2" onclick="tapWidget3(this)" style="padding:15px; background:white; color:#0f172a; border:1px solid #e2e8f0; border-left:4px solid #64748b; border-radius:6px; cursor:pointer; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05); user-select:none;">Historia de vida de cada fundador en detalle</div><div class="tap-widget" id="widget_3_w3" data-widgetid="w3" onclick="tapWidget3(this)" style="padding:15px; background:white; color:#0f172a; border:1px solid #e2e8f0; border-left:4px solid #64748b; border-radius:6px; cursor:pointer; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05); user-select:none;">Tracción y Métricas Financieras (CAC/LTV)</div><div class="tap-widget" id="widget_3_w4" data-widgetid="w4" onclick="tapWidget3(this)" style="padding:15px; background:white; color:#0f172a; border:1px solid #e2e8f0; border-left:4px solid #64748b; border-radius:6px; cursor:pointer; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05); user-select:none;">Modelo de Negocio (Cómo hacemos dinero)</div><div class="tap-widget" id="widget_3_w5" data-widgetid="w5" onclick="tapWidget3(this)" style="padding:15px; background:white; color:#0f172a; border:1px solid #e2e8f0; border-left:4px solid #64748b; border-radius:6px; cursor:pointer; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05); user-select:none;">Manual técnico de ensamblaje del silicio</div></div></div><div style="flex:2; min-width:350px; padding:20px; background:#0f172a; border-radius:12px; color:white; min-height:400px;"><h3 style="color:#38bdf8;">Dashboard Estratégico</h3><p style="color:#94a3b8; font-size:12px;">Toca un widget del panel izquierdo, luego toca aquí para colocarlo. Toca un widget ya colocado para devolverlo al panel.</p><div id="dashboard_canvas_3" onclick="tapDashboard3(event)" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-top:20px; min-height:300px; padding:10px; border:2px dashed #334155; border-radius:8px; cursor:pointer;"></div></div></div><button class="btn" onclick="validarDashboard3()">Validar Dashboard</button></div>
+<div class="screen module-screen" id="module_4"><span class="activity-badge badge-flujo">🔗 Ordenar flujo</span><h2>Misión 4: Ruta de Financiamiento</h2><p class="description">Conecta los nodos para establecer la secuencia lógica de levantamiento de capital, desde la fase inicial hasta la fase de escala.</p><div style="background:#f8fafc; border-left:4px solid #0284c7; padding:15px; margin-bottom:20px; font-size:14px; border-radius:6px;"><strong>Contexto del Caso:</strong> GreenEnergy acaba de nacer con los ahorros de los socios. ¿Cuál es el orden lógico para ir levantando dinero a medida que crecen?</div>
+        <div style="background:#fffbeb; border:1px solid #fef3c7; border-left:4px solid #d97706; padding:15px; margin-bottom:20px; font-size:14px; border-radius:8px;">
+            <strong style="color:#b45309; display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <span>💡</span> Pista del Consultor / Advertencia
+            </strong>
+            <p style="color:#78350f; line-height:1.5; margin:0;">Pista del Consultor: Empiezas con tu dinero (Bootstrapping), luego consigues a quienes creen en ti al principio (Ángeles), y de último a los fondos de alto riesgo (VC) para escalar.</p>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:20px; margin-bottom:20px;"><div style="padding:15px; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px;"><h3>Nodos Disponibles</h3><p style="font-size:12px; color:#64748b; margin:6px 0 10px;">💡 Toca un nodo para seleccionarlo, luego toca la ranura donde quieres colocarlo.</p><div id="nodos_pool_4" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; min-height:60px;"><div class="tap-node" id="nodo_4_n1" data-nodeid="n1" onclick="tapNodo4(this)" style="padding:10px 15px; background:white; border:2px solid #0284c7; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05); user-select:none;">Bootstrapping (Ahorros propios)</div><div class="tap-node" id="nodo_4_n2" data-nodeid="n2" onclick="tapNodo4(this)" style="padding:10px 15px; background:white; border:2px solid #64748b; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05); user-select:none;">Préstamo bancario millonario sin garantías</div><div class="tap-node" id="nodo_4_n3" data-nodeid="n3" onclick="tapNodo4(this)" style="padding:10px 15px; background:white; border:2px solid #f59e0b; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05); user-select:none;">Inversionistas Ángeles (Semilla)</div><div class="tap-node" id="nodo_4_n4" data-nodeid="n4" onclick="tapNodo4(this)" style="padding:10px 15px; background:white; border:2px solid #10b981; border-radius:8px; cursor:pointer; font-weight:600; font-size:13px; box-shadow:0 2px 4px rgba(0,0,0,0.05); user-select:none;">Venture Capital (Ronda Serie A)</div></div></div><div style="padding:20px; background:#f1f5f9; border:2px dashed #94a3b8; border-radius:8px;"><h3>Lienzo de Flujo Lógico</h3><div style="display:flex; align-items:center; flex-wrap:wrap; gap:15px; margin-top:20px;" id="flow_canvas_4"><div class="node-slot" id="slot_4_0" onclick="tapSlot4(this)" style="width:160px; height:80px; background:#e2e8f0; border:2px dashed #cbd5e1; border-radius:8px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:12px; color:#94a3b8; cursor:pointer; user-select:none;">Toca para colocar</div><div style="font-size:24px; color:#94a3b8;">➤</div><div class="node-slot" id="slot_4_1" onclick="tapSlot4(this)" style="width:160px; height:80px; background:#e2e8f0; border:2px dashed #cbd5e1; border-radius:8px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:12px; color:#94a3b8; cursor:pointer; user-select:none;">Toca para colocar</div><div style="font-size:24px; color:#94a3b8;">➤</div><div class="node-slot" id="slot_4_2" onclick="tapSlot4(this)" style="width:160px; height:80px; background:#e2e8f0; border:2px dashed #cbd5e1; border-radius:8px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:12px; color:#94a3b8; cursor:pointer; user-select:none;">Toca para colocar</div></div></div></div><button class="btn" onclick="validarNodos4()">Validar Flujo</button></div>
+
+
+        <!-- SCREEN RESULTS -->
+        <div class="screen" id="screenResults">
+            <h2>Consola de Diagnóstico Final</h2>
+            <p class="description">Has completado los retos. Revisa tu desempeño y genera el reporte oficial obligatorio.</p>
+            
+            <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 20px;">
+                <h3 style="color: #047857; margin-bottom: 5px;">Puntuación Final</h3>
+                <div style="font-size: 42px; font-weight: 800; color: #10b981;" id="finalScoreVal">0</div>
+                <div style="font-size: 13px; color: #047857;" id="finalScoreMax">sobre 0 puntos posibles</div>
+                <div style="font-size: 12px; color: #64748b; margin-top: 6px;" id="finalScorePct"></div>
+                <div style="font-size: 12px; color: #64748b; margin-top: 4px;" id="finalJokersUsed"></div>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: center; margin-top: 30px;">
+                <button class="btn" onclick="downloadPDFDirect()">1. Descargar PDF (Obligatorio)</button>
+                <button class="btn btn-outline" onclick="printNatively()">2. Imprimir / Ver PDF</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- NUDGE MODAL (error feedback) -->
+    <div class="nudge-overlay" id="nudgeOverlay">
+        <div class="nudge-card">
+            <div style="font-size: 28px; margin-bottom: 10px;">⚠️</div>
+            <h3 style="margin-bottom: 8px;">Detente y Reflexiona</h3>
+            <div class="nudge-text" id="nudgeText">...</div>
+            <button class="btn" onclick="closeNudge()">Entendido, Reintentar</button>
+        </div>
+    </div>
+
+    <!-- JOKER REVEAL MODAL -->
+    <div class="joker-overlay" id="jokerOverlay">
+        <div class="joker-reveal-card">
+            <div style="font-size: 32px; margin-bottom: 8px;" id="jokerIcon">🧠</div>
+            <h3 style="margin-bottom: 4px;" id="jokerTitle">Consulta al Profe</h3>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">Este comodín ha sido consumido (-15 pts en este módulo)</p>
+            <div class="joker-reveal-content" id="jokerContent">...</div>
+            <button class="btn" onclick="closeJoker()" style="margin-top: 8px;">Entendido ✓</button>
+        </div>
+    </div>
+
+    <!-- PRINT TEMPLATE -->
+    <div id="printReportTemplate" style="width:100%; max-width:800px; margin:0 auto; padding:20px; font-family: Helvetica, sans-serif;">
+        <div style="border-bottom: 2px solid #2c3e50; padding-bottom: 15px; margin-bottom: 20px;">
+            <h2 style="color: #2c3e50; margin:0;">REPORTE OFICIAL DE EVALUACIÓN</h2>
+            <div style="font-size: 12px; color: #7f8c8d;">Electiva V - Emprendimiento e Innovación Empresarial | Unidad IV (Parte 2) - Gestión Financiera, Fuentes de Financiamiento y Pitch Deck</div>
+        </div>
+        <div style="font-size: 12px; margin-bottom: 20px;">
+            <strong>Integrantes del Equipo:</strong><br>
+            <div id="printNames"></div>
+        </div>
+        <div style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 20px; text-align: center;">
+            <div style="font-weight: bold;">CALIFICACIÓN FINAL</div>
+            <div style="font-size: 32px; color: #27ae60; font-weight: bold;" id="printScore">0.0 / 5.0</div>
+        </div>
+    </div>
+
+    <script>
+        // ── Core Engine State ──────────────────────────────────────────────
+        const isTeamMode = true;
+        let teamMembers = [];
+        let modoExplorador = false;
+        let explorerCurrentModule = 1;
+        let totalModulesCount = 0; // set after modules are injected
+
+        // ── Scoring System (100 pts per module) ───────────────────────────
+        const SCORE_BASE_PER_MODULE  = 100;
+        const SCORE_DISCOUNT_CONSULTA = 15;
+        const SCORE_DISCOUNT_VOTO     = 10;
+        const SCORE_DISCOUNT_SEGUNDA  =  5;
+        const SCORE_DISCOUNT_ERROR    = 10;
+        const SCORE_MIN_PER_MODULE    = 10;
+
+        let moduleScores    = []; // score per completed module
+        let currentModuleBonus = SCORE_BASE_PER_MODULE; // running score for current module
+        let currentModuleIndex = 1;
+
+        // ── Joker State ───────────────────────────────────────────────────
+        let jokers = { consulta: true, voto: true, segunda: true };
+        let jokersUsedCount = 0;
+        // Per-module joker data stored in logDesempeno
+        let currentModuleJokers = [];
+        // Hint text of current module (set by each module renderer)
+        let currentModuleHint = '';
+
+        // ── Stats ─────────────────────────────────────────────────────────
+        let totalAciertos   = 0;
+        let totalDesaciertos = 0;
+        let logDesempeno = [];
+
+        function registrarProgresoModulo(tituloModulo, preguntaInstruccion, detalleRespuesta, erroresModulo) {
+            totalAciertos++;
+            // Clamp module score to minimum
+            if (currentModuleBonus < SCORE_MIN_PER_MODULE) currentModuleBonus = SCORE_MIN_PER_MODULE;
+            moduleScores.push(currentModuleBonus);
+            logDesempeno.push({
+                mision: 'Misión ' + currentModuleIndex,
+                titulo: tituloModulo,
+                pregunta: preguntaInstruccion || '',
+                detalle: detalleRespuesta,
+                errores: erroresModulo || 0,
+                puntaje: currentModuleBonus,
+                comodines: [...currentModuleJokers]
+            });
+            // Reset for next module
+            currentModuleBonus = SCORE_BASE_PER_MODULE;
+            currentModuleJokers = [];
+            currentModuleHint = '';
+        }
+
+        // ── Explorer Mode ──────────────────────────────────────────────────
+        function activarModoExplorador() {
+            modoExplorador = true;
+            document.getElementById('screenWelcome').classList.remove('active');
+            document.getElementById('explorerBanner').classList.add('visible');
+            // Count total modules
+            let idx = 1;
+            while (document.getElementById('module_' + idx)) { idx++; }
+            totalModulesCount = idx - 1;
+            explorerCurrentModule = 1;
+            showModuleExplorer(1);
+        }
+
+        function showModuleExplorer(index) {
+            document.querySelectorAll('.module-screen').forEach(s => {
+                s.classList.remove('active');
+                // Disable all interactive answer controls in explorer mode
+                s.querySelectorAll('button.btn:not(.explorer-ctrl), input, select').forEach(el => el.disabled = true);
+                // Show/hide explorer nav
+                let nav = s.querySelector('.explorer-nav');
+                if (nav) nav.classList.add('visible');
+            });
+            const target = document.getElementById('module_' + index);
+            if (target) {
+                target.classList.add('active');
+                document.getElementById('explorerBanner').classList.add('visible');
+                // Inject explorer nav if not present
+                if (!target.querySelector('.explorer-nav')) {
+                    const nav = document.createElement('div');
+                    nav.className = 'explorer-nav visible';
+                    nav.innerHTML = `
+                        ${index > 1 ? `<button class="btn btn-outline explorer-ctrl" onclick="showModuleExplorer(${index - 1})">← Anterior</button>` : ''}
+                        <button class="btn explorer-ctrl" onclick="salirModoExplorador()">✏️ Registrar equipo y responder</button>
+                        ${index < totalModulesCount ? `<button class="btn btn-outline explorer-ctrl" onclick="showModuleExplorer(${index + 1})">Siguiente →</button>` : ''}
+                    `;
+                    target.appendChild(nav);
+                }
+            }
+        }
+
+        function salirModoExplorador() {
+            modoExplorador = false;
+            document.querySelectorAll('.module-screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('explorerBanner').classList.remove('visible');
+            // Re-enable controls
+            document.querySelectorAll('.module-screen button, .module-screen input').forEach(el => el.disabled = false);
+            document.getElementById('screenWelcome').classList.add('active');
+        }
+
+        // ── Team registration & simulation start ──────────────────────────
+        function initWelcome() {
+            const container = document.getElementById('teamInputArea');
+            if (isTeamMode) {
+                container.innerHTML = `
+                    <label class="input-label">Nombres de los Integrantes del Equipo:</label>
+                    <div class="team-members-list" id="memberList">
+                        <input type="text" class="text-input member-input" placeholder="Integrante 1 (Nombre Completo)">
+                        <input type="text" class="text-input member-input" placeholder="Integrante 2 (Nombre Completo)">
+                    </div>
+                    <button class="btn btn-outline" style="font-size:12px; padding:6px 12px;" onclick="addMember()">+ Añadir Integrante</button>
+                `;
+            } else {
+                container.innerHTML = `
+                    <label class="input-label">Tu Nombre Completo:</label>
+                    <input type="text" class="text-input member-input" id="singleName" placeholder="Escribe tu nombre para comenzar...">
+                `;
+            }
+        }
+
+        function addMember() {
+            const list = document.getElementById('memberList');
+            const input = document.createElement('input');
+            input.type = "text";
+            input.className = "text-input member-input";
+            input.placeholder = "Integrante " + (list.children.length + 1);
+            list.appendChild(input);
+        }
+
+        function startSimulation() {
+            const inputs = document.querySelectorAll('.member-input');
+            teamMembers = Array.from(inputs).map(i => i.value.trim()).filter(v => v !== "");
+            if (teamMembers.length === 0) {
+                alert("Debes ingresar al menos un nombre para comenzar.");
+                return;
+            }
+            document.getElementById('screenWelcome').classList.remove('active');
+            document.getElementById('statusBar').style.display = 'flex';
+            // Count total modules
+            let idx = 1;
+            while (document.getElementById('module_' + idx)) { idx++; }
+            totalModulesCount = idx - 1;
+            showModule(1);
+        }
+
+        function showModule(index) {
+            document.querySelectorAll('.module-screen').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById('module_' + index);
+            if (target) {
+                target.classList.add('active');
+                document.getElementById('currentMod').innerText = index + ' / ' + totalModulesCount;
+                // Reset module score tracker
+                currentModuleBonus = SCORE_BASE_PER_MODULE;
+                currentModuleJokers = [];
+                currentModuleHint = '';
+            } else {
+                finishSimulation();
+            }
+        }
+
+        function proceedToNextModule() {
+            currentModuleIndex++;
+            showModule(currentModuleIndex);
+        }
+
+        // ── Joker System ──────────────────────────────────────────────────
+        function usarComodin(tipo) {
+            if (!jokers[tipo]) return;
+            jokers[tipo] = false;
+            jokersUsedCount++;
+            currentModuleJokers.push(tipo);
+
+            const btnMap = { consulta: 'jokerConsulta', voto: 'jokerVoto', segunda: 'jokerSegunda' };
+            document.getElementById(btnMap[tipo]).classList.add('used');
+
+            if (tipo === 'consulta') {
+                currentModuleBonus = Math.max(SCORE_MIN_PER_MODULE, currentModuleBonus - SCORE_DISCOUNT_CONSULTA);
+                const hint = currentModuleHint || 'El docente te sugiere revisar los conceptos clave del módulo antes de responder.';
+                showJokerReveal('🧠', 'Consulta al Profe', `(−${SCORE_DISCOUNT_CONSULTA} pts en este módulo)`, hint);
+            } else if (tipo === 'voto') {
+                currentModuleBonus = Math.max(SCORE_MIN_PER_MODULE, currentModuleBonus - SCORE_DISCOUNT_VOTO);
+                // Generate plausible but slightly misleading vote distribution
+                const a = Math.floor(Math.random() * 30) + 35;
+                const b = Math.floor(Math.random() * 25) + 15;
+                const c = 100 - a - b;
+                showJokerReveal('👥', 'Voto del Aula', `(−${SCORE_DISCOUNT_VOTO} pts en este módulo)`,
+                    `Distribución de respuestas del aula:<br><br>
+                    <strong>Opción A:</strong> ${a}%<br>
+                    <strong>Opción B:</strong> ${b}%<br>
+                    <strong>Opción C:</strong> ${c}%<br><br>
+                    <em>Recuerda: el aula no siempre tiene razón. Discute con tu equipo antes de decidir.</em>`);
+            } else if (tipo === 'segunda') {
+                currentModuleBonus = Math.max(SCORE_MIN_PER_MODULE, currentModuleBonus - SCORE_DISCOUNT_SEGUNDA);
+                showJokerReveal('🔄', 'Segunda Oportunidad', `(−${SCORE_DISCOUNT_SEGUNDA} pts en este módulo)`,
+                    'Tu selección actual ha sido borrada. Analiza nuevamente y elige tu respuesta.');
+                // Reset current selection (handled per module — this notifies)
+            }
+        }
+
+        function showJokerReveal(icon, title, subtitle, content) {
+            document.getElementById('jokerIcon').innerText = icon;
+            document.getElementById('jokerTitle').innerText = title;
+            document.getElementById('jokerContent').innerHTML = content;
+            document.querySelector('#jokerOverlay p').innerText = subtitle;
+            document.getElementById('jokerOverlay').classList.add('active');
+        }
+
+        function closeJoker() {
+            document.getElementById('jokerOverlay').classList.remove('active');
+        }
+
+        // ── Error Feedback (no lives — just nudge + score penalty) ─────────
+        function triggerError(nudgeMessage) {
+            totalDesaciertos++;
+            currentModuleBonus = Math.max(SCORE_MIN_PER_MODULE, currentModuleBonus - SCORE_DISCOUNT_ERROR);
+            showNudge(nudgeMessage);
+        }
+
+        function showNudge(msg) {
+            document.getElementById('nudgeText').innerText = msg;
+            document.getElementById('nudgeOverlay').classList.add('active');
+        }
+
+        function closeNudge() {
+            document.getElementById('nudgeOverlay').classList.remove('active');
+        }
+
+        // ── Finish & Results ──────────────────────────────────────────────
+        function finishSimulation() {
+            document.getElementById('statusBar').style.display = 'none';
+            document.getElementById('screenResults').classList.add('active');
+
+            const totalScore = moduleScores.reduce((a, b) => a + b, 0);
+            const maxScore   = totalModulesCount * SCORE_BASE_PER_MODULE;
+            const pct = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+            const jokersLeft = Object.values(jokers).filter(v => v).length;
+
+            document.getElementById('finalScoreVal').innerText  = totalScore;
+            document.getElementById('finalScoreMax').innerText  = `sobre ${maxScore} puntos posibles`;
+            document.getElementById('finalScorePct').innerText  = `${pct}% de efectividad`;
+            document.getElementById('finalJokersUsed').innerText = `Comodines usados: ${jokersUsedCount} | Restantes: ${jokersLeft}`;
+
+            // Build on-screen log
+            let summaryHTML = `
+                <div style="display:flex; justify-content:space-around; background:#f8fafc; padding:15px; border-radius:8px; margin:20px 0; border:1px solid #e2e8f0;">
+                    <div><strong>Aciertos:</strong> <span style="color:#10b981; font-weight:bold;">${totalAciertos}</span></div>
+                    <div><strong>Errores:</strong> <span style="color:#ef4444; font-weight:bold;">${totalDesaciertos}</span></div>
+                    <div><strong>Comodines usados:</strong> <span style="color:#f59e0b; font-weight:bold;">${jokersUsedCount}/3</span></div>
+                </div>
+                <h4 style="margin-top:20px; margin-bottom:10px; font-size:14px; text-transform:uppercase; color:#64748b;">Desglose por Misión:</h4>
+                <div style="text-align:left; display:flex; flex-direction:column; gap:10px;">
+            `;
+            logDesempeno.forEach(item => {
+                const jokersStr = item.comodines.length > 0 ? ' | Comodines: ' + item.comodines.join(', ') : '';
+                summaryHTML += `
+                    <div style="background:white; border:1px solid #e2e8f0; border-left:4px solid #10b981; padding:12px; border-radius:6px; font-size:13px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <strong style="color:#0f172a;">${item.mision}: ${item.titulo}</strong>
+                            <span style="font-size:13px; font-weight:800; color:#0284c7;">${item.puntaje} pts</span>
+                        </div>
+                        ${item.pregunta ? `<div style="font-size:12px; color:#475569; margin-top:4px; font-style:italic;"><strong>Instrucción:</strong> ${item.pregunta}</div>` : ''}
+                        <div style="color:#0f172a; margin-top:4px;"><strong>Respuesta:</strong> ${item.detalle}</div>
+                        <div style="font-size:11px; color:${item.errores > 0 ? '#ef4444' : '#10b981'}; margin-top:4px;">Errores: ${item.errores}${jokersStr}</div>
+                    </div>
+                `;
+            });
+            summaryHTML += `</div>`;
+
+            const resultsCard = document.getElementById('screenResults');
+            let logContainer = document.getElementById('onScreenLogContainer');
+            if (!logContainer) {
+                logContainer = document.createElement('div');
+                logContainer.id = 'onScreenLogContainer';
+                resultsCard.insertBefore(logContainer, resultsCard.querySelector('div[style*="display: flex"]'));
+            }
+            logContainer.innerHTML = summaryHTML;
+        }
+
+        // ── PDF Generation ────────────────────────────────────────────────
+        function downloadPDFDirect() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const now = new Date().toLocaleString();
+
+            const totalScore = moduleScores.reduce((a, b) => a + b, 0);
+            const maxScore   = totalModulesCount * SCORE_BASE_PER_MODULE;
+            const pct = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+            const jokersLeft = Object.values(jokers).filter(v => v).length;
+
+            // Header
+            doc.setFillColor(15, 23, 42);
+            doc.rect(0, 0, 210, 32, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(13);
+            doc.text("IUTEMBI - COMPROBANTE OFICIAL DE EVALUACIÓN", 14, 13);
+            doc.setFontSize(9);
+            doc.setFont("Helvetica", "normal");
+            doc.text("Electiva V - Emprendimiento e Innovación Empresarial | Unidad IV (Parte 2) - Gestión Financiera, Fuentes de Financiamiento y Pitch Deck", 14, 20);
+            doc.text("Fecha y Hora: " + now, 14, 26);
+
+            // Team
+            doc.setTextColor(15, 23, 42);
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(10);
+            doc.text("ESTUDIANTE(S) / INTEGRANTES:", 14, 42);
+            doc.setFont("Helvetica", "normal");
+            let y = 48;
+            teamMembers.forEach(m => {
+                doc.text("• " + m, 18, y);
+                y += 6;
+            });
+
+            // Score box
+            y += 4;
+            doc.setFillColor(248, 250, 252);
+            doc.setDrawColor(226, 232, 240);
+            doc.roundedRect(14, y, 182, 34, 3, 3, 'FD');
+
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(9);
+            doc.setTextColor(100, 116, 139);
+            doc.text("PUNTUACIÓN TOTAL", 20, y + 8);
+            doc.text("PORCENTAJE", 90, y + 8);
+            doc.text("COMODINES USADOS", 140, y + 8);
+
+            doc.setFontSize(15);
+            doc.setFont("Helvetica", "bold");
+            doc.setTextColor(16, 185, 129);
+            doc.text(`${totalScore} / ${maxScore} pts`, 20, y + 20);
+
+            doc.setTextColor(15, 23, 42);
+            doc.setFontSize(13);
+            doc.text(`${pct}%`, 90, y + 20);
+
+            doc.setTextColor(245, 158, 11);
+            doc.text(`${jokersUsedCount} / 3`, 140, y + 20);
+
+            doc.setFont("Helvetica", "normal");
+            doc.setFontSize(8);
+            doc.setTextColor(100, 116, 139);
+            doc.text(`Errores totales: ${totalDesaciertos} | Comodines restantes: ${jokersLeft}`, 20, y + 28);
+
+            // Breakdown
+            y += 42;
+            doc.setFont("Helvetica", "bold");
+            doc.setFontSize(10);
+            doc.setTextColor(15, 23, 42);
+            doc.text("DETALLE DE EJERCICIOS Y RESPUESTAS DESARROLLADAS:", 14, y);
+            y += 8;
+
+            logDesempeno.forEach((item) => {
+                let tituloText = `${item.mision}: ${item.titulo} — ${item.puntaje} pts`;
+                let estadoText = `Errores: ${item.errores} | Comodines: ${item.comodines.length > 0 ? item.comodines.join(', ') : 'ninguno'}`;
+                const maxW = 155;
+
+                doc.setFont("Helvetica", "italic");
+                doc.setFontSize(7.5);
+                let preguntaLines = item.pregunta ? doc.splitTextToSize("Instrucción: " + item.pregunta, maxW) : [];
+
+                doc.setFont("Helvetica", "normal");
+                doc.setFontSize(7.5);
+                let respuestaLines = doc.splitTextToSize("Respuesta: " + item.detalle, maxW);
+
+                const pad = 5;
+                const lineH_title = 4;
+                const lineH_small = 3.2;
+                const sectionGap = 3;
+
+                let contentH = lineH_title;
+                if (preguntaLines.length > 0) contentH += sectionGap + (preguntaLines.length * lineH_small);
+                contentH += sectionGap + (respuestaLines.length * lineH_small);
+                contentH += sectionGap + lineH_small;
+
+                let cardHeight = contentH + (pad * 2);
+
+                if (y + cardHeight > 270) { doc.addPage(); y = 20; }
+
+                doc.setFillColor(255, 255, 255);
+                doc.setDrawColor(226, 232, 240);
+                doc.roundedRect(14, y, 182, cardHeight, 2, 2, 'FD');
+
+                let curY = y + pad + lineH_title;
+
+                doc.setFont("Helvetica", "bold");
+                doc.setFontSize(9);
+                doc.setTextColor(2, 132, 199);
+                doc.text(tituloText, 18, curY);
+                curY += sectionGap;
+
+                if (preguntaLines.length > 0) {
+                    doc.setFont("Helvetica", "italic");
+                    doc.setFontSize(7.5);
+                    doc.setTextColor(100, 116, 139);
+                    preguntaLines.forEach(line => { curY += lineH_small; doc.text(line, 18, curY); });
+                    curY += sectionGap;
+                }
+
+                doc.setFont("Helvetica", "normal");
+                doc.setFontSize(7.5);
+                doc.setTextColor(15, 23, 42);
+                respuestaLines.forEach(line => { curY += lineH_small; doc.text(line, 18, curY); });
+                curY += sectionGap;
+
+                doc.setFontSize(7);
+                doc.setTextColor(item.errores > 0 ? 239 : 16, item.errores > 0 ? 68 : 185, item.errores > 0 ? 68 : 129);
+                curY += lineH_small;
+                doc.text(estadoText, 18, curY);
+
+                y += cardHeight + 4;
+            });
+
+            // Footer Code
+            doc.setFontSize(7.5);
+            doc.setTextColor(148, 163, 184);
+            const hash = "IUTEMBI-EVAL-" + Math.random().toString(36).substring(2, 9).toUpperCase();
+            doc.text(`Código Único de Verificación: ${hash} | Documento Oficial de Evaluación`, 14, 287);
+
+            // Dynamic Filename: actividad_unidad_{NRO}_{NOMBRES}.pdf
+            let nombresClean = teamMembers.join("_y_").replace(/[^a-zA-Z0-9_]/g, "_").substring(0, 45);
+            let unidadNum = "4";
+            let filename = `actividad_unidad_${unidadNum}_${nombresClean}.pdf`;
+
+            // Save PDF Blob
+            const blob = doc.output('blob');
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => { document.body.removeChild(link); }, 100);
+        }
+
+        let data_prefix = "sabado5_unidad4_parte2";
+
+        function printNatively() {
+            window.print();
+        }
+
+        // Initialize
+        initWelcome();
+
+        // INJECTED MODULES JS
+        
+        // Set module hint for Consulta al Profe joker
+        (function() { currentModuleHint = "Pista del Consultor: Los costos fijos se pagan independientemente de si vendes (ej. alquiler), los variables cambian en proporción a las ventas (ej. materia prima). El capital invertido no es un costo operativo."; })();
+        
+        let selectedItem1 = null;
+        let matches1 = {};
+        let erroresModulo1 = 0;
+        const itemTexts1 = ["Alquiler del taller de ensamblaje.", "Componentes de silicio y bater\u00edas de litio por kit.", "Suscripci\u00f3n mensual del software CRM.", "Comisi\u00f3n del 5% de la pasarela por cada pago.", "Dinero de los ahorros de los fundadores (Capital).", "Sueldo de un gerente que a\u00fan no han contratado."];
+        const correctMatches1 = {"0": "Costos Fijos", "1": "Costos Variables", "2": "Costos Fijos", "3": "Costos Variables", "4": "Descartados", "5": "Descartados"};
+        
+        function selectItem1(evt, id) {
+            if (evt) evt.stopPropagation();
+            const pool = document.getElementById('items_list_1');
+            const el = document.getElementById('item_1_' + id);
+            
+            if (el.parentElement.id !== 'items_list_1') {
+                pool.appendChild(el);
+                el.style.borderColor = '#e2e8f0';
+                el.style.background = 'white';
+                delete matches1[id];
+                selectedItem1 = null;
+                return;
+            }
+            
+            document.querySelectorAll('#items_list_1 .item-drag').forEach(e => {
+                if (e.parentElement.id === 'items_list_1') e.style.borderColor = '#e2e8f0';
+            });
+            el.style.borderColor = '#0284c7';
+            selectedItem1 = id;
+        }
+
+        function selectCat1(cat) {
+            if (selectedItem1 !== null) {
+                let el = document.getElementById('item_1_' + selectedItem1);
+                el.style.borderColor = '#0284c7';
+                el.style.background = '#f0f9ff';
+                document.getElementById('cat_1_' + cat).appendChild(el);
+                matches1[selectedItem1] = cat;
+                selectedItem1 = null;
+            }
+        }
+
+        function validarMod1() {
+            if (Object.keys(matches1).length < 6) {
+                alert('Asigna todos los conceptos primero antes de validar.'); 
+                return;
+            }
+            let errores = 0;
+            const pool = document.getElementById('items_list_' + 1);
+            
+            for (let key in matches1) {
+                let el = document.getElementById('item_' + 1 + '_' + key);
+                if (matches1[key] !== correctMatches1[key]) {
+                    errores++;
+                    pool.appendChild(el);
+                    el.style.borderColor = '#ef4444';
+                    el.style.background = '#fef2f2';
+                    delete matches1[key];
+                } else {
+                    el.style.borderColor = '#10b981';
+                    el.style.background = '#ecfdf5';
+                }
+            }
+            
+            if (errores > 0) {
+                erroresModulo1 += errores;
+                triggerError("Revisa bien. El alquiler y el software son fijos. El capital inicial de los socios no es un costo, descártalo.");
+            } else {
+                let resumen = Object.keys(matches1).map(k => '• ' + itemTexts1[k] + ' => ' + matches1[k]).join('\n');
+                registrarProgresoModulo("Costos Fijos vs. Costos Variables", "Clasifica cada egreso de GreenEnergy en su categoría correspondiente. Descarta los elementos que no sean costos.", resumen, erroresModulo1);
+                proceedToNextModule();
+            }
+        }
+        
+
+        // Set module hint for Consulta al Profe joker
+        (function() { currentModuleHint = "Pista del Consultor: Margen Unitario = Precio ($150) - Costo Variable ($70) = $80. Punto de Equilibrio = Costos Fijos ($2,000) / Margen Unitario ($80)."; })();
+        
+        const escenarioCorrecto2 = 1;
+        const opcionesTexts2 = ["13 kits solares al mes.", "25 kits solares al mes.", "40 kits solares al mes."];
+        let selectedOpt2 = null;
+        let erroresModulo2 = 0;
+        let answered2 = false;
+
+        function selectOpt2(idx) {
+            if (answered2) return;
+            // Reset styles
+            document.querySelectorAll('#opts_2 button').forEach(b =>
+                b.classList.remove('selected')
+            );
+            document.getElementById('opt_2_' + idx).classList.add('selected');
+            selectedOpt2 = idx;
+            document.getElementById('btnConfirm2').disabled = false;
+        }
+
+        function confirmarOpt2() {
+            if (selectedOpt2 === null || answered2) return;
+            const fb = document.getElementById('fb_2');
+            if (selectedOpt2 === escenarioCorrecto2) {
+                answered2 = true;
+                fb.className = 'feedback-panel correct';
+                const retroTxt = `` || '¡Correcto!';
+                fb.innerHTML = '<strong>✅ ¡Correcto!</strong><br>' + retroTxt;
+                fb.style.display = 'block';
+                document.getElementById('btnConfirm2').style.display = 'none';
+                document.getElementById('btnNext2').style.display = 'inline-flex';
+                registrarProgresoModulo("Cálculo del Punto de Equilibrio", "Calcula el Punto de Equilibrio (kits solares a vender mensualmente) para alcanzar rentabilidad cero.", opcionesTexts2[selectedOpt2], erroresModulo2);
+            } else {
+                erroresModulo2++;
+                // Deselect so they can retry
+                document.querySelectorAll('#opts_2 button').forEach(b => b.classList.remove('selected'));
+                selectedOpt2 = null;
+                document.getElementById('btnConfirm2').disabled = true;
+                fb.className = 'feedback-panel incorrect';
+                fb.innerHTML = '<strong>❌ Incorrecto.</strong> Punto de Equilibrio = Costos Fijos / (Precio - Costo Variable Unitario). Divide $2,000 entre $80.';
+                fb.style.display = 'block';
+                triggerError("Punto de Equilibrio = Costos Fijos / (Precio - Costo Variable Unitario). Divide $2,000 entre $80.");
+            }
+        }
+        
+
+        // Set module hint for Consulta al Profe joker
+        (function() { currentModuleHint = "Pista del Consultor: Un inversionista quiere ver el Problema, la Solución, el Modelo de Negocio y la Tracción. No le interesa tu biografía de la infancia ni tecnicismos aburridos."; })();
+        
+        const correctWidgets3 = ["w1", "w3", "w4"];
+        const widgetTexts3 = {"w1": "El Problema y la Soluci\u00f3n", "w2": "Historia de vida de cada fundador en detalle", "w3": "Tracci\u00f3n y M\u00e9tricas Financieras (CAC/LTV)", "w4": "Modelo de Negocio (C\u00f3mo hacemos dinero)", "w5": "Manual t\u00e9cnico de ensamblaje del silicio"};
+        let erroresModulo3 = 0;
+        let selectedWidget3 = null;
+
+        function tapWidget3(el) {
+            const pool = document.getElementById('widgets_pool_3');
+            const canvas = document.getElementById('dashboard_canvas_3');
+            // If already on dashboard, pull it back
+            if (el.closest('#dashboard_canvas_3')) {
+                pool.appendChild(el);
+                el.style.borderLeft = '4px solid #64748b';
+                if (selectedWidget3 === el) selectedWidget3 = null;
+                return;
+            }
+            // Deselect previous
+            if (selectedWidget3 && selectedWidget3 !== el) {
+                selectedWidget3.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                selectedWidget3.style.transform = 'none';
+            }
+            if (selectedWidget3 === el) {
+                el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                el.style.transform = 'none';
+                selectedWidget3 = null;
+            } else {
+                el.style.boxShadow = '0 0 0 3px rgba(56,189,248,0.5)';
+                el.style.transform = 'scale(1.03)';
+                selectedWidget3 = el;
+            }
+        }
+
+        function tapDashboard3(evt) {
+            if (!selectedWidget3) return;
+            // If clicked on a widget already on canvas, handle via tapWidget
+            if (evt.target.classList.contains('tap-widget')) return;
+            const canvas = document.getElementById('dashboard_canvas_3');
+            const node = selectedWidget3;
+            node.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+            node.style.transform = 'none';
+            node.style.borderLeft = '4px solid #38bdf8';
+            canvas.appendChild(node);
+            selectedWidget3 = null;
+        }
+
+        function validarDashboard3() {
+            let canvas = document.getElementById('dashboard_canvas_3');
+            let placed = Array.from(canvas.querySelectorAll('.tap-widget')).map(el => el.dataset.widgetid);
+            if (placed.length === 0) { alert('El dashboard está vacío. Coloca al menos un widget.'); return; }
+            let isCorrect = placed.length === correctWidgets3.length && placed.every(id => correctWidgets3.includes(id));
+            if (isCorrect) {
+                let resumen = "Widgets: " + placed.map(id => widgetTexts3[id]).join(', ');
+                registrarProgresoModulo("El Pitch Deck de Alto Impacto", "Arrastra las diapositivas esenciales para tu Pitch Deck a inversionistas semilla. Descarta el relleno.", resumen, erroresModulo3);
+                proceedToNextModule();
+            } else {
+                erroresModulo3++;
+                triggerError("Las especificaciones técnicas hiperdetalladas o historias largas de los fundadores duermen al inversionista. ¡Descártalos!");
+            }
+        }
+        
+
+        // Set module hint for Consulta al Profe joker
+        (function() { currentModuleHint = "Pista del Consultor: Empiezas con tu dinero (Bootstrapping), luego consigues a quienes creen en ti al principio (Ángeles), y de último a los fondos de alto riesgo (VC) para escalar."; })();
+        
+        const correctFlow4 = ["n1", "n3", "n4"];
+        const nodeTexts4 = {"n1": "Bootstrapping (Ahorros propios)", "n2": "Pr\u00e9stamo bancario millonario sin garant\u00edas", "n3": "Inversionistas \u00c1ngeles (Semilla)", "n4": "Venture Capital (Ronda Serie A)"};
+        let erroresModulo4 = 0;
+        let selectedNodo4 = null; // the DOM element currently "in hand"
+
+        function tapNodo4(el) {
+            const pool = document.getElementById('nodos_pool_4');
+            // If already in a slot, pull back to pool
+            if (el.parentElement.classList.contains('node-slot')) {
+                el.parentElement.innerHTML = '';
+                el.parentElement.style.borderColor = '#cbd5e1';
+                el.parentElement.innerHTML = 'Toca para colocar';
+                pool.appendChild(el);
+            }
+            // Deselect previous selection
+            if (selectedNodo4 && selectedNodo4 !== el) {
+                selectedNodo4.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                selectedNodo4.style.transform = 'none';
+            }
+            if (selectedNodo4 === el) {
+                // Toggle off
+                el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                el.style.transform = 'none';
+                selectedNodo4 = null;
+            } else {
+                el.style.boxShadow = '0 0 0 3px rgba(2,132,199,0.35)';
+                el.style.transform = 'scale(1.04)';
+                selectedNodo4 = el;
+            }
+        }
+
+        function tapSlot4(slotEl) {
+            if (!selectedNodo4) return;
+            // If slot occupied, return occupant to pool
+            const pool = document.getElementById('nodos_pool_4');
+            const children = slotEl.querySelectorAll('.tap-node');
+            children.forEach(c => pool.appendChild(c));
+            slotEl.innerHTML = '';
+            // Place selected node in slot
+            const node = selectedNodo4;
+            node.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+            node.style.transform = 'none';
+            slotEl.appendChild(node);
+            slotEl.style.borderColor = '#0284c7';
+            selectedNodo4 = null;
+        }
+
+        function validarNodos4() {
+            let slots = document.querySelectorAll('#flow_canvas_4 .node-slot');
+            let currentFlow = [];
+            let allFilled = true;
+            slots.forEach(slot => {
+                const n = slot.querySelector('.tap-node');
+                if (!n) { allFilled = false; } else { currentFlow.push(n.dataset.nodeid); }
+            });
+            if (!allFilled) { alert('Debes completar todas las ranuras antes de validar.'); return; }
+            let isCorrect = correctFlow4.every((id, i) => currentFlow[i] === id);
+            if (isCorrect) {
+                let resumen = currentFlow.map(id => nodeTexts4[id]).join(' ➤ ');
+                registrarProgresoModulo("Ruta de Financiamiento", "Conecta los nodos para establecer la secuencia lógica de levantamiento de capital, desde la fase inicial hasta la fase de escala.", resumen, erroresModulo4);
+                proceedToNextModule();
+            } else {
+                erroresModulo4++;
+                triggerError("Un banco no te prestará millones sin ventas. Y un Venture Capital no entra antes del Capital Semilla. Orden: Bootstrapping -> Semilla/Ángeles -> Venture Capital.");
+            }
+        }
+        
+
+    </script>
+</body>
+</html>
